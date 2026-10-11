@@ -568,10 +568,12 @@ function makeExtinguisher(x,z,type){
   return g;
 }
 // Extinguisher station moved next to the room's exit door (south-east corner),
-// with the "Tiêu lệnh chữa cháy" board mounted on the wall right above them
-makeExtinguisher(9.45,6.05,'CO2');
+// with the "Tiêu lệnh chữa cháy" board mounted on the wall right above them.
+// The three units sit ~0.95m apart along the wall so their floating name tags
+// no longer overlap each other (POWDER stays centred under the board at 5.35).
+makeExtinguisher(9.45,6.30,'CO2');
 makeExtinguisher(9.45,5.35,'POWDER');
-makeExtinguisher(9.45,4.65,'WATER');
+makeExtinguisher(9.45,4.40,'WATER');
 (function(){
   const cv=document.createElement('canvas');cv.width=1024;cv.height=682;
   const c=cv.getContext('2d');
@@ -1270,7 +1272,7 @@ function drawMinimap(){
   const fp={x:SX(-7),y:SZ(-4.9)};mm.fillStyle=fireHealth>0?'#ef4444':'#22c55e';mm.beginPath();mm.arc(fp.x,fp.y,7,0,7);mm.fill();mm.fillStyle='#fff';mm.font='9px sans-serif';mm.fillText('🔥',fp.x-6,fp.y+3);
   // breaker & extinguishers
   mm.fillStyle='#f59e0b';mm.fillRect(SX(9)-4,SZ(1.8)-4,8,8);
-  mm.fillStyle='#dc2626';mm.beginPath();mm.arc(SX(9.45),SZ(6.05),5,0,7);mm.fill();
+  mm.fillStyle='#dc2626';mm.beginPath();mm.arc(SX(9.45),SZ(6.30),5,0,7);mm.fill();
   mm.fillStyle='#f59e0b';mm.beginPath();mm.arc(SX(9.45),SZ(5.35),4,0,7);mm.fill();
   // player
   const px=SX(player.x),py=SZ(player.z);mm.fillStyle='#fff';mm.beginPath();mm.arc(px,py,5,0,7);mm.fill();mm.strokeStyle='#0ea5e9';mm.lineWidth=2;mm.stroke();
