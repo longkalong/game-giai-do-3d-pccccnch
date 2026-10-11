@@ -29,6 +29,12 @@ canvas#three{width:100%;height:100%;display:block;touch-action:none}
 .hudCard{background:rgba(17,24,39,.92);color:#fff;border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);border-radius:16px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #missionCard{flex:1;min-width:0}
 #missionCard b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#fca5a5}
+/* Compact 1-line summary — only visible on mobile/small (see media query below) */
+#missionCompact{display:none;align-items:center;gap:8px;margin-top:2px}
+#missionCompact #compactTask{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:800;color:#fff;line-height:1.3}
+#compactFire{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:12px;background:rgba(220,38,38,.28);border:1px solid rgba(255,255,255,.18);color:#fecaca;border-radius:999px;padding:3px 7px;white-space:nowrap;line-height:1}
+#compactChevron{font-size:18px;line-height:1;color:#fca5a5;transition:transform .18s ease;flex:0 0 auto;font-weight:900}
+body.mode-mobile #missionCard{pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #objectiveText{font-weight:800;font-size:15px;line-height:1.25;margin-top:2px}
 #subObjective{font-size:12px;color:#d1d5db;line-height:1.4;margin-top:3px}
 #statsCard{display:flex;gap:14px;align-items:center}
@@ -98,7 +104,7 @@ body.in-tutorial #minimapWrap{display:none}
 #minimap{width:132px;height:96px;background:#1f2937;border-radius:10px;display:block}
 
 /* Mobile controls */
-#joystick{position:fixed;left:18px;bottom:72px;width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);z-index:25;display:none;touch-action:none}
+#joystick{position:fixed;left:8px;bottom:58px;width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);z-index:25;display:none;touch-action:none}
 #stick{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 6px 16px rgba(0,0,0,.4)}
 #btnInteract{position:fixed;right:18px;bottom:86px;z-index:26;width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:#dc2626;color:#fff;font-weight:900;font-size:13px;box-shadow:0 12px 25px rgba(220,38,38,.5);display:none}
 #btnSpray{position:fixed;right:106px;bottom:86px;z-index:26;width:64px;height:64px;border-radius:50%;border:2px solid #fff;background:#0f766e;color:#fff;font-weight:900;font-size:11px;display:none}
@@ -146,6 +152,16 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
   #checklist .task{font-size:12px;padding:5px 6px}
   #prompt{bottom:196px;font-size:12px}
   #objectiveText{font-size:14px}
+  /* Mobile mission card: collapsed = 1-line summary only; tap to expand */
+  body.mode-mobile #missionCompact{display:flex}
+  body.mode-mobile #missionCard.is-collapsed{padding:8px 10px}
+  body.mode-mobile #missionCard.is-collapsed #missionKicker,
+  body.mode-mobile #missionCard.is-collapsed #objectiveText,
+  body.mode-mobile #missionCard.is-collapsed #subObjective,
+  body.mode-mobile #missionCard.is-collapsed #taskStrip,
+  body.mode-mobile #missionCard.is-collapsed #fireRow{display:none!important}
+  body.mode-mobile #missionCard:not(.is-collapsed) #missionCompact{margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.12)}
+  body.mode-mobile #missionCard:not(.is-collapsed) #compactChevron{transform:rotate(180deg)}
 }
 
 /* Overlays */
@@ -185,8 +201,9 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 
 <!-- HUD -->
 <div id="hud">
-  <div class="hudCard" id="missionCard">
+  <div class="hudCard is-collapsed" id="missionCard">
     <b id="missionKicker">🔥 Nhiệm vụ hiện tại</b>
+    <div id="missionCompact" role="button" aria-label="Mở rộng bảng nhiệm vụ"><span id="compactTask">🔥 Bước 1/5 · Tìm nguồn cháy</span><span id="compactFire">🔥 100%</span><span id="compactChevron">⌄</span></div>
     <div id="objectiveText">Đang làm việc… bỗng ngửi thấy mùi khét</div>
     <div id="subObjective">Chọn phiên bản, chọn level rồi vào chơi. Đi quanh văn phòng để tìm nguồn khói.</div>
     <div id="taskStrip"><span id="taskDots"></span><span id="taskNow">Bước 1/5 · Tìm nguồn cháy</span></div>
@@ -683,6 +700,8 @@ function renderTaskStrip(){
   dots.innerHTML=dotHtml;
   if(curIdx<0) now.textContent='✓ Đã xong cả '+TASK_INFO.length+' bước quy trình chữa cháy';
   else now.textContent='Bước '+(curIdx+1)+'/'+TASK_INFO.length+' · '+TASK_INFO[curIdx][1]+' — '+TASK_INFO[curIdx][2];
+  const ct=document.getElementById('compactTask');
+  if(ct){ if(curIdx<0) ct.textContent='🔥 Đã xong '+TASK_INFO.length+' bước ✓'; else ct.textContent='🔥 Bước '+(curIdx+1)+'/'+TASK_INFO.length+' · '+TASK_INFO[curIdx][1]; }
 }
 function updateObjective(main,sub){objectiveText.textContent=main;subObjective.textContent=sub;}
 function dialog(title,text,choices,badge='💡 Tình huống'){
@@ -831,6 +850,8 @@ function checkFireProximity(){
 function updateFireUI(){
   document.getElementById('fireFill').style.width=Math.max(0,Math.min(100,fireHealth))+'%';
   document.getElementById('firePct').textContent=Math.max(0,Math.round(fireHealth))+'%';
+  const cf=document.getElementById('compactFire');
+  if(cf) cf.textContent='🔥 '+Math.max(0,Math.round(fireHealth))+'%';
 }
 
 // ============ CONTROLS ============
@@ -955,6 +976,8 @@ function renderTutStrip(){
   for(let i=0;i<4;i++) dotHtml+='<span class="tdot '+(i<tutStep?'done':i===tutStep?'now':'')+'"></span>';
   dots.innerHTML=dotHtml;
   now.textContent='Bước '+(tutStep+1)+'/4 · '+TUT_INFO[tutStep]+(tutProgText?' — '+tutProgText:'');
+  const ct=document.getElementById('compactTask');
+  if(ct) ct.textContent='🔥 Bước '+(tutStep+1)+'/4 · '+TUT_INFO[tutStep];
 }
 function setTutStep(n){
   tutStep=n;
@@ -1237,6 +1260,8 @@ function chooseVersion(mode){
   document.body.classList.remove('mode-pc','mode-mobile','touch');
   document.body.classList.add('mode-'+mode);
   if(mode==='mobile') document.body.classList.add('touch');
+  const mc=document.getElementById('missionCard');
+  if(mc){ if(mode==='mobile') mc.classList.add('is-collapsed'); else mc.classList.remove('is-collapsed'); }
   const badge=document.getElementById('modeBadge');
   if(badge) badge.textContent=mode==='mobile'?'📱 Bản Điện thoại':'💻 Bản Máy tính';
   document.getElementById('levelModeNote').textContent=(mode==='mobile'?'Bạn đã chọn BẢN ĐIỆN THOẠI 📱':'Bạn đã chọn BẢN MÁY TÍNH 💻')+' — giờ chọn level để vào chơi.';
@@ -1259,6 +1284,16 @@ const btnL0=document.getElementById('btnLevel0'),btnL1=document.getElementById('
 if(btnL0) btnL0.onclick=()=>startLevel(0);
 if(btnL1) btnL1.onclick=()=>startLevel(1);
 if(btnBackVer) btnBackVer.onclick=()=>{document.getElementById('levelScreen').classList.add('hidden');document.getElementById('startScreen').classList.remove('hidden');};
+// Mission card tap-to-expand (mobile/small only — CSS scopes the visual effect)
+(function(){
+  const mc=document.getElementById('missionCard');
+  if(!mc) return;
+  mc.addEventListener('click',function(){
+    if(!document.body.classList.contains('mode-mobile')) return;
+    if(window.innerWidth>640) return;
+    mc.classList.toggle('is-collapsed');
+  });
+})();
 // Auto-highlight the likely version (still the user's choice)
 if(('ontouchstart' in window)||navigator.maxTouchPoints>0){
   if(btnMB) btnMB.classList.add('primary');
