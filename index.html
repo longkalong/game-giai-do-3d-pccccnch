@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="color-scheme" content="light dark"/>
 <link rel="icon" href="data:,"/>
-<title>Mô phỏng PCCC và CNCH 3D v1.261011-1</title>
+<title>Mô phỏng PCCC và CNCH 3D v1.261011-2</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -240,7 +240,7 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 <!-- START -->
 <div class="overlay" id="startScreen">
   <div class="panel">
-    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-1</span>
+    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-2</span>
     <h1>Đang làm việc bỗng <em>ngửi thấy mùi khét…</em> có khói!</h1>
     <p>Bạn đang làm việc thì ngửi thấy mùi khét lạ, khói bắt đầu lan trong văn phòng. Hãy đi điều tra xem khói từ đâu, suy luận loại cháy và xử lý an toàn. Nếu lửa lớn hoặc khói dày, ưu tiên thoát ra ngoài và gọi 114 — chỉ dập khi lửa còn nhỏ và luôn có lối thoát sau lưng.</p>
     <div class="grid2">
@@ -407,9 +407,10 @@ const carpet=new THREE.Mesh(new THREE.PlaneGeometry(12,7),new THREE.MeshStandard
 carpet.rotation.x=-Math.PI/2;carpet.position.set(0,0.01,0);scene.add(carpet);
 
 box(20,3.2,0.3,0xe8e0d4,0,1.6,-7); // north wall
-// south wall: two segments with a real doorway gap at x=8.5 (door opens, player walks through)
-box(17.9,3.2,0.3,0xe8e0d4,-1.05,1.6,7);
-box(0.9,3.2,0.3,0xe8e0d4,9.55,1.6,7);
+// south wall: two segments with a real doorway gap at x=6.5 — moved ~2m west of the
+// extinguisher row on the east wall so aiming at the door never collides with a bottle target
+box(15.9,3.2,0.3,0xe8e0d4,-2.05,1.6,7);
+box(2.9,3.2,0.3,0xe8e0d4,8.55,1.6,7);
 box(0.3,3.2,14,0xe8e0d4,-10,1.6,0);
 box(0.3,3.2,14,0xe8e0d4,10,1.6,0);
 box(20,0.2,14,0xf5f0e8,0,3.25,0); // ceiling
@@ -421,7 +422,8 @@ smokeLayer.rotation.x=Math.PI/2;smokeLayer.position.set(0,3.08,0);scene.add(smok
 
 // Windows glowing on south wall
 for(let i=-6;i<=6;i+=4){
-  const win=box(2.6,1.4,0.05,0xbae6fd,i,1.8,6.82);win.material.emissive=new THREE.Color(0x7dd3fc);win.material.emissiveIntensity=0.35;
+  const wx=(i===6?8.55:i); // last window sits right of the moved doorway instead of spanning it
+  const win=box(2.6,1.4,0.05,0xbae6fd,wx,1.8,6.82);win.material.emissive=new THREE.Color(0x7dd3fc);win.material.emissiveIntensity=0.35;
 }
 
 // Desks rows
@@ -567,8 +569,9 @@ function makeExtinguisher(x,z,type){
   addCollider(x,z,0.5,0.5);
   return g;
 }
-// Extinguisher station moved next to the room's exit door (south-east corner),
-// with the "Tiêu lệnh chữa cháy" board mounted on the wall right above them.
+// Extinguisher station on the east wall (south-east corner), kept ~3m clear of the
+// exit door so their aim targets never overlap, with the "Tiêu lệnh chữa cháy"
+// board mounted on the wall right above them.
 // The three units sit ~0.95m apart along the wall so their floating name tags
 // no longer overlap each other (POWDER stays centred under the board at 5.35).
 makeExtinguisher(9.45,6.30,'CO2');
@@ -623,11 +626,11 @@ const phoneMesh=box(0.28,0.06,0.2,0x111827,1.2,0.85,5.0);
 interactables.push({x:1.2,z:5.0,id:'phone',title:'Điện thoại bàn — gọi 114',desc:'phone'});
 
 // Exit door south: a real hinged door in the doorway gap — press E to open/close, then WALK through
-const doorPivot=new THREE.Group();doorPivot.position.set(7.9,0,6.86);scene.add(doorPivot);
+const doorPivot=new THREE.Group();doorPivot.position.set(5.9,0,6.86);scene.add(doorPivot);
 const doorPanel=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.2,0.07),new THREE.MeshStandardMaterial({color:0x16a34a,roughness:0.6}));doorPanel.position.set(0.6,1.1,0);doorPanel.castShadow=true;doorPivot.add(doorPanel);
 const doorHandle=new THREE.Mesh(new THREE.SphereGeometry(0.045,10,10),new THREE.MeshStandardMaterial({color:0xd1d5db,metalness:0.7,roughness:0.3}));doorHandle.position.set(1.08,1.05,0.07);doorPivot.add(doorHandle);
-const exitSign=box(1.1,0.32,0.06,0x14532d,8.5,2.48,6.8);exitSign.material.emissive=new THREE.Color(0x22c55e);exitSign.material.emissiveIntensity=0.7;
-interactables.push({x:8.5,z:6.2,id:'exit',title:'Cửa thoát hiểm — E mở cửa',desc:'exit'});
+const exitSign=box(1.1,0.32,0.06,0x14532d,6.5,2.48,6.8);exitSign.material.emissive=new THREE.Color(0x22c55e);exitSign.material.emissiveIntensity=0.7;
+interactables.push({x:6.5,z:6.2,id:'exit',title:'Cửa thoát hiểm — E mở cửa',desc:'exit'});
 
 // ===== LEVEL 1: HALLWAY physically attached south of the office =====
 // The hallway shares the office's south wall (z=7). The exit door in that wall
@@ -659,15 +662,15 @@ const hallSign=hallBox(2.4,0.5,0.06,0x991b1b,4,2.45,11.82);
 interactables.push({x:4.0,z:11.0,id:'hose_cabinet',title:'Tủ họng nước vách tường — mở tủ',desc:'cabinet'});
 interactables.push({x:4.55,z:11.1,id:'hose_connect',title:'Họng nước chờ — kết nối vòi',desc:'connect'});
 interactables.push({x:5.35,z:11.1,id:'hose_valve',title:'Van nước — mở van',desc:'valve'});
-interactables.push({x:8.5,z:7.8,id:'hall_door',title:'Cửa văn phòng — E mở/đóng cửa',desc:'halldoor'});
+interactables.push({x:6.5,z:7.8,id:'hall_door',title:'Cửa văn phòng — E mở/đóng cửa',desc:'halldoor'});
 // Hose lines: hallway segment (cabinet -> exit door) and office segment (exit door -> fire), shown after connecting
 function makeHoseLine(points,color){const g=new THREE.BufferGeometry().setFromPoints(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const l=new THREE.Line(g,new THREE.LineBasicMaterial({color}));l.visible=false;scene.add(l);return l;}
-const hoseLineHall=makeHoseLine([[4.55,0.35,11.5],[5,0.06,10.2],[7,0.06,8.6],[8.5,0.06,7.4]],0xd97706);
-const hoseLineOffice=makeHoseLine([[8.5,0.06,6.6],[6,0.06,4],[2,0.06,1],[-2,0.06,-2],[-6.2,0.06,-4.4]],0xd97706);
+const hoseLineHall=makeHoseLine([[4.55,0.35,11.5],[5,0.06,10.2],[6.2,0.06,8.6],[6.5,0.06,7.4]],0xd97706);
+const hoseLineOffice=makeHoseLine([[6.5,0.06,6.6],[6,0.06,4],[2,0.06,1],[-2,0.06,-2],[-6.2,0.06,-4.4]],0xd97706);
 hallwayGroup.visible=true;
 // Wall colliders so the player walks around walls and through the door gap only
-addCollider(-1.05,7,17.9,0.35); // office south wall, left of the door
-addCollider(9.55,7,0.9,0.35);   // office south wall, right of the door
+addCollider(-2.05,7,15.9,0.35); // office south wall, left of the door
+addCollider(8.55,7,2.9,0.35);   // office south wall, right of the door
 addCollider(4,12,12,0.35);     // hallway south wall
 addCollider(-2,9.5,0.35,5);    // hallway west wall
 addCollider(10,9.5,0.35,5);    // hallway east wall
@@ -715,6 +718,7 @@ const heldCO2=heldExtModel('CO2'),heldPowder=heldExtModel('POWDER'),heldNozzle=h
 // primitive versions built above stay on screen whenever a file is missing or
 // fails, so positions, colliders and gameplay are identical either way.
 let deskTopY=0.82; // desktop surface height (the GLB gaming desk sits a touch lower)
+let phoneWrap=null,mapWrap=null; // iphone.glb / ban-do.glb wrappers once loaded, so the desk swap can re-seat them
 function glbShadows(root){root.traverse(function(o){if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});}
 function prepClone(root,sx,sy,sz,ry){
   const c=root.clone(true);
@@ -738,6 +742,13 @@ function swapGLBDesks(root){ // ban-gaming.glb -> tabletop + legs of all 6 desks
   });
   deskTopY=0.75;
   deskUnits.forEach(function(u){if(u.imacWrap) u.imacWrap.position.y=deskTopY;});
+  // The player's main desk is a separate primitive (not one of the 6 deskUnits):
+  // give it the same gaming-desk model, scaled to its 2.4 x 1.2 m top
+  const mw=glbWrap(prepClone(root,1.714,1,1.708,0),true);
+  mw.position.set(0,0,5.0);scene.add(mw);myDeskText.visible=false;
+  // Re-seat the iPhone / escape map on the new (lower) desktop if they already loaded
+  if(phoneWrap) phoneWrap.position.y=deskTopY;
+  if(mapWrap) mapWrap.position.y=deskTopY;
 }
 function swapGLBImac(root){ // imac-de-ban.glb -> screen + keyboard on every desk
   deskUnits.forEach(function(u){
@@ -754,7 +765,7 @@ function swapGLBChairs(root){ // ghe-gaming.glb -> the chair at every desk
 }
 function swapGLBDoor(root){ // cua-thoat-hiem.glb -> exit door (frame stays fixed, panel keeps the hinge)
   const frameNames={door_0:true,door_1:true,door_2:true,door_12:true,door_13:true}; // jambs, header, EXIT sign
-  const frameG=new THREE.Group();frameG.position.set(8.5,0,6.98);
+  const frameG=new THREE.Group();frameG.position.set(6.5,0,6.98);
   const panelWrap=new THREE.Group();panelWrap.position.set(0.6,0,0.12);
   let panelKids=0;
   root.children.slice().forEach(function(k){
@@ -793,12 +804,12 @@ function glbFit(obj,target){ // scale a clone so its largest dimension == target
 }
 function swapGLBPhone(root){ // iphone.glb -> replaces the old desk phone on the player's desk
   const c=root.clone(true);glbFit(c,0.2);glbShadows(c);
-  const w=glbWrap(c,true);w.position.set(1.2,0.82,5.0);scene.add(w);
+  const w=glbWrap(c,true);w.position.set(1.2,deskTopY,5.0);scene.add(w);phoneWrap=w;
   phoneMesh.visible=false;
 }
 function swapGLBMap(root){ // ban-do.glb -> escape map lying on the player's (main) desk
   const c=root.clone(true);glbFit(c,0.62);glbShadows(c);
-  const w=glbWrap(c,true);w.position.set(-0.45,0.82,5.05);w.rotation.y=0.35;scene.add(w);
+  const w=glbWrap(c,true);w.position.set(-0.45,deskTopY,5.05);w.rotation.y=0.35;scene.add(w);mapWrap=w;
 }
 function glbFitHeight(obj,h){ // scale a clone uniformly so its bounding-box height == h (metres)
   const s=new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
@@ -937,7 +948,7 @@ const cabinetInnerLabels=[];
   addNameLabel('Tủ cầu dao điện',9.45,2.3,1.8);
   addNameLabel('Bảng PCCC',-1.5,2.55,-6.55);
   addNameLabel('Điện thoại — gọi 114',1.2,1.24,5.0);
-  addNameLabel('Cửa thoát hiểm',8.5,2.74,6.86);
+  addNameLabel('Cửa thoát hiểm',6.5,2.74,6.86);
   addNameLabel('Tủ họng nước',4.0,2.42,11.62);
   cabinetInnerLabels.push(addNameLabel('Họng nước chờ',4.55,2.02,11.6));
   cabinetInnerLabels.push(addNameLabel('Van nước',5.35,2.12,11.68));
@@ -1264,7 +1275,7 @@ function drawMinimap(){
   mm.strokeStyle='#4b5563';mm.strokeRect(SX(-10),SZ(7),20*8.5,14*8.5);
   // hallway south of the office + the door gap between them
   mm.strokeStyle='#78716c';mm.strokeRect(SX(-2),SZ(12),12*8.5,5*8.5);
-  mm.fillStyle='#22c55e';mm.fillRect(SX(7.9),SZ(7)-2,1.2*8.5,4);
+  mm.fillStyle='#22c55e';mm.fillRect(SX(5.9),SZ(7)-2,1.2*8.5,4);
   mm.fillStyle='#dc2626';mm.fillRect(SX(3.1),SZ(11.9),1.8*8.5,4);
   // desks
   mm.fillStyle='#92400e';[[-3,2.5],[0.5,2.5],[4,2.5],[-3,-0.8],[0.5,-0.8],[4,-0.8]].forEach(p=>{mm.fillRect(SX(p[0])-12,SZ(p[1])-6,24,12);});
@@ -1276,7 +1287,7 @@ function drawMinimap(){
   mm.fillStyle='#f59e0b';mm.beginPath();mm.arc(SX(9.45),SZ(5.35),4,0,7);mm.fill();
   // player
   const px=SX(player.x),py=SZ(player.z);mm.fillStyle='#fff';mm.beginPath();mm.arc(px,py,5,0,7);mm.fill();mm.strokeStyle='#0ea5e9';mm.lineWidth=2;mm.stroke();
-  mm.fillStyle='#e5e7eb';mm.font='8px sans-serif';mm.fillText('Bạn',px+7,py+3);mm.fillText('Họng nước',SX(3.1),SZ(11.9)-3);mm.fillText('Cửa',SX(7.9),SZ(7)+11);
+  mm.fillStyle='#e5e7eb';mm.font='8px sans-serif';mm.fillText('Bạn',px+7,py+3);mm.fillText('Họng nước',SX(3.1),SZ(11.9)-3);mm.fillText('Cửa',SX(5.9),SZ(7)+11);
 }
 
 // ============ LEVEL 0 TUTORIAL ============
@@ -1401,7 +1412,7 @@ function animate(){
     // Collision: test each axis separately so the player slides along
     // furniture instead of freezing when the combined move clips a corner.
     function hitsCollider(px,pz){
-      if(!exitDoorOpen&&Math.abs(px-8.5)<0.92&&Math.abs(pz-7)<0.5) return true; // closed door blocks the gap
+      if(!exitDoorOpen&&Math.abs(px-6.5)<0.92&&Math.abs(pz-7)<0.5) return true; // closed door blocks the gap
       for(const c of colliders){
         if(Math.abs(px-c.x)<c.w/2+0.32&&Math.abs(pz-c.z)<c.d/2+0.32) return true;
       }
