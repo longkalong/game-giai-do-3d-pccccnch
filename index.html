@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="color-scheme" content="light dark"/>
+<link rel="icon" href="data:,"/>
+<title>Game Giải Đố 3D — Cháy Văn Phòng</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<style>
+:root{
+  --bg:#fff7ed; --ink:#1c1917; --muted:#78716c; --card:#ffffff; --line:#e7e5e4;
+  --red:#dc2626; --red2:#991b1b; --orange:#ea580c; --amber:#f59e0b; --teal:#0f766e; --teal2:#134e4a;
+  --hud:#111827; --hudText:#f9fafb;
+  --radius:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0c0a09; --ink:#fafaf9; --muted:#a8a29e; --card:#1c1917; --line:#292524; --hud:#000000; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0c0a09;font-family:"Be Vietnam Pro",system-ui,sans-serif;color:var(--ink)}
+button{font-family:inherit}
+#gameWrap{position:fixed;inset:0;background:#111}
+canvas#three{width:100%;height:100%;display:block;touch-action:none}
+
+/* Top HUD */
+#hud{position:fixed;left:12px;right:12px;top:12px;z-index:20;display:flex;gap:10px;align-items:flex-start;pointer-events:none}
+.hudCard{background:rgba(17,24,39,.92);color:#fff;border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);border-radius:16px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#missionCard{flex:1;min-width:0}
+#missionCard b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#fca5a5}
+#objectiveText{font-weight:800;font-size:15px;line-height:1.25;margin-top:2px}
+#subObjective{font-size:12px;color:#d1d5db;line-height:1.4;margin-top:3px}
+#statsCard{display:flex;gap:14px;align-items:center}
+.stat{text-align:center;min-width:58px}
+.stat span{display:block;font-family:"JetBrains Mono",monospace;font-weight:800;font-size:18px;line-height:1}
+.stat label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;font-weight:700}
+#smokeBarWrap{width:110px;height:8px;background:#374151;border-radius:999px;overflow:hidden;margin-top:5px}
+#smokeBar{height:100%;width:12%;background:linear-gradient(90deg,#f59e0b,#dc2626);transition:width .5s}
+
+/* Checklist */
+#checklist{position:fixed;left:12px;top:112px;z-index:19;width:248px;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+@media(prefers-color-scheme:dark){#checklist{background:rgba(28,25,23,.96)}}
+#checklist h3{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.task{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:10px;font-size:13px;line-height:1.35}
+.task.done{background:#dcfce7;color:#14532d;text-decoration:line-through}
+.task.active{background:#fef3c7;border:1px solid #fde68a}
+.task.locked{opacity:.55}
+.dot{width:20px;height:20px;border-radius:50%;border:2px solid #d6d3d1;display:grid;place-items:center;font-size:12px;flex:0 0 auto;background:#fff;color:#000}
+.task.done .dot{background:#16a34a;color:#fff;border-color:#16a34a}
+
+/* Crosshair & prompt */
+#crosshair{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;width:22px;height:22px;pointer-events:none}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.8);border-radius:999px}
+#crosshair:before{left:50%;top:0;width:2px;height:100%;transform:translateX(-50%)}
+#crosshair:after{top:50%;left:0;height:2px;width:100%;transform:translateY(-50%)}
+#crossDot{position:absolute;left:50%;top:50%;width:6px;height:6px;background:#dc2626;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%)}
+#prompt{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:22;background:#111827;color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px 14px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.4);display:none;max-width:92vw;text-align:center}
+#prompt kbd{background:#fff;color:#111;padding:2px 7px;border-radius:6px;font-family:monospace}
+#toast{position:fixed;left:50%;top:86px;transform:translateX(-50%);z-index:30;background:#dc2626;color:#fff;padding:10px 16px;border-radius:999px;font-weight:800;font-size:13px;box-shadow:0 10px 25px rgba(220,38,38,.4);display:none;max-width:92vw;text-align:center}
+
+/* Bottom controls help */
+#helpBar{position:fixed;left:12px;bottom:12px;z-index:18;background:rgba(17,24,39,.9);color:#e5e7eb;border-radius:999px;padding:8px 12px;font-size:12px;display:flex;gap:12px;backdrop-filter:blur(8px)}
+#helpBar b{color:#fff}
+#inventory{position:fixed;right:12px;bottom:12px;z-index:18;display:flex;gap:8px}
+.invSlot{min-width:86px;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+.invSlot span{font-size:22px;display:block}
+.invSlot label{font-size:11px;font-weight:800;line-height:1.2;display:block}
+.invSlot.empty{opacity:.6}
+
+/* Minimap */
+#minimapWrap{position:fixed;right:12px;top:92px;z-index:18;background:rgba(17,24,39,.92);padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.15)}
+#minimapWrap label{color:#9ca3af;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;display:block;margin-bottom:5px;text-align:center}
+#minimap{width:132px;height:96px;background:#1f2937;border-radius:10px;display:block}
+
+/* Mobile controls */
+#joystick{position:fixed;left:18px;bottom:72px;width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);z-index:25;display:none;touch-action:none}
+#stick{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 6px 16px rgba(0,0,0,.4)}
+#btnInteract{position:fixed;right:18px;bottom:86px;z-index:26;width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:#dc2626;color:#fff;font-weight:900;font-size:13px;box-shadow:0 12px 25px rgba(220,38,38,.5);display:none}
+#btnSpray{position:fixed;right:106px;bottom:86px;z-index:26;width:64px;height:64px;border-radius:50%;border:2px solid #fff;background:#0f766e;color:#fff;font-weight:900;font-size:11px;display:none}
+@media (pointer:coarse){
+  #joystick,#btnInteract,#btnSpray{display:block}
+  #helpBar{display:none}
+  #checklist{width:206px;top:104px}
+  #minimapWrap{display:none}
+}
+
+/* Touch devices detected by JS (covers tablets the pointer:coarse query misses) */
+body.touch #joystick,body.touch #btnInteract,body.touch #btnSpray{display:block}
+body.touch #helpBar{display:none}
+body.touch #minimapWrap{display:none}
+
+/* Small screens — phone layout */
+@media (max-width:640px){
+  #hud{flex-wrap:wrap}
+  #missionCard{flex:1 1 100%}
+  #statsCard{flex:1 1 100%;justify-content:space-between}
+  .stat{min-width:48px}
+  #checklist{width:188px;padding:9px;top:auto;bottom:198px}
+  #checklist .task{font-size:12px;padding:5px 6px}
+  #prompt{bottom:196px;font-size:12px}
+  #objectiveText{font-size:14px}
+}
+
+/* Overlays */
+.overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.62);backdrop-filter:blur(6px)}
+.panel{width:min(680px,100%);max-height:92vh;overflow:auto;background:var(--card);border-radius:24px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.5);padding:22px}
+.panel h1{margin:6px 0 8px;font-size:28px;line-height:.95;letter-spacing:-.03em}
+.panel h1 em{color:var(--red);font-style:normal}
+.panel p{line-height:1.6;color:var(--muted);font-size:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+@media(prefers-color-scheme:dark){.badge{background:#450a0a;color:#fca5a5;border-color:#7f1d1d}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.infoBox{border:1px solid var(--line);border-radius:16px;padding:12px;background:color-mix(in srgb,var(--card) 92%, var(--bg))}
+.infoBox b{font-size:13px}
+.infoBox p{margin:4px 0 0;font-size:12px}
+.btn{appearance:none;border:0;cursor:pointer;border-radius:999px;padding:13px 18px;font-weight:900;font-size:14px}
+.btnPrimary{background:var(--red);color:#fff;box-shadow:0 12px 25px rgba(220,38,38,.35);width:100%}
+.btnPrimary:active{transform:scale(.98)}
+.btnGhost{background:transparent;border:1px solid var(--line);color:var(--ink);width:100%}
+.choiceBtn{width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:13px 14px;margin-top:8px;cursor:pointer;font-weight:700;line-height:1.4}
+.choiceBtn:hover{border-color:var(--red);background:#fef2f2}
+@media(prefers-color-scheme:dark){.choiceBtn:hover{background:#450a0a}}
+.kbdRow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.kbdRow span{background:#111827;color:#fff;padding:6px 9px;border-radius:999px;font-size:11px;font-weight:700}
+#fireMeter{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+#fireFill{height:100%;width:100%;background:linear-gradient(90deg,#f59e0b,#dc2626);transition:width .3s}
+.hidden{display:none!important}
+#winStats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.winStat{border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center}
+.winStat span{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:800;display:block}
+.winStat label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div id="gameWrap"><canvas id="three"></canvas></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hudCard" id="missionCard">
+    <b>🔥 Nhiệm vụ hiện tại</b>
+    <div id="objectiveText">Đang làm việc… bỗng ngửi thấy mùi khét</div>
+    <div id="subObjective">Nhấn Bắt đầu, đi quanh văn phòng để tìm nguồn khói. Dùng WASD + chuột.</div>
+  </div>
+  <div class="hudCard" id="statsCard">
+    <div class="stat"><span id="timer">03:00</span><label>Thời gian</label></div>
+    <div class="stat"><span id="score">0</span><label>Điểm</label></div>
+    <div class="stat" style="min-width:110px;text-align:left"><span style="font-size:11px;font-family:inherit;letter-spacing:.06em">KHÓI ĐỘC</span><div id="smokeBarWrap"><div id="smokeBar"></div></div></div>
+  </div>
+</div>
+
+<div id="checklist">
+  <h3>🧯 Quy trình chữa cháy</h3>
+  <div class="task active" id="task-find"><div class="dot">1</div><div><b>Tìm nguồn cháy</b><br><span style="color:var(--muted);font-size:12px">Đi theo mùi khét & khói</span></div></div>
+  <div class="task locked" id="task-quiz"><div class="dot">2</div><div><b>Nhận định loại cháy</b><br><span style="color:var(--muted);font-size:12px">Cháy điện ≠ dùng nước</span></div></div>
+  <div class="task locked" id="task-breaker"><div class="dot">3</div><div><b>Ngắt cầu dao điện</b><br><span style="color:var(--muted);font-size:12px">Tủ điện ở tường phía Đông</span></div></div>
+  <div class="task locked" id="task-ext"><div class="dot">4</div><div><b>Lấy bình CO₂ đúng loại</b><br><span style="color:var(--muted);font-size:12px">Tránh bình nước & xô nước</span></div></div>
+  <div class="task locked" id="task-spray"><div class="dot">5</div><div><b>Dập lửa & gọi 114</b><br><span style="color:var(--muted);font-size:12px">Giữ phím F khi ở gần lửa</span></div></div>
+  <div style="margin-top:10px"><label style="font-size:11px;font-weight:800;letter-spacing:.06em">LỬA <span id="firePct">100%</span></label><div id="fireMeter"><div id="fireFill"></div></div></div>
+</div>
+
+<div id="minimapWrap"><label>Sơ đồ văn phòng</label><canvas id="minimap" width="264" height="192"></canvas></div>
+
+<div id="crosshair"><div id="crossDot"></div></div>
+<div id="prompt"></div>
+<div id="toast"></div>
+
+<div id="helpBar"><span><b>W A S D</b> di chuyển</span><span><b>Chuột</b> kéo để nhìn (click = khóa chuột)</span><span><b>E</b> tương tác</span><span><b>F</b> xịt bình (giữ)</span><span><b>Shift</b> chạy</span></div>
+
+<div id="inventory">
+  <div class="invSlot empty" id="invItem"><span>🎒</span><label>Chưa có đồ</label></div>
+  <div class="invSlot"><span id="invBreakerIcon">⚡</span><label id="invBreakerText">Điện: Đang BẬT</label></div>
+</div>
+
+<div id="joystick"><div id="stick"></div></div>
+<button id="btnInteract">E<br>TƯƠNG TÁC</button>
+<button id="btnSpray">GIỮ<br>XỊT</button>
+
+<!-- START -->
+<div class="overlay" id="startScreen">
+  <div class="panel">
+    <span class="badge">🎮 Game giải đố 3D • Góc nhìn thứ nhất</span>
+    <h1>Đang làm việc bỗng <em>ngửi thấy mùi khét…</em> có khói!</h1>
+    <p>Bạn đang làm việc thì ngửi thấy mùi khét lạ, khói bắt đầu lan trong văn phòng. Hãy đi điều tra xem khói từ đâu, suy luận loại cháy và xử lý an toàn. Nếu lửa lớn hoặc khói dày, ưu tiên thoát ra ngoài và gọi 114 — chỉ dập khi lửa còn nhỏ và luôn có lối thoát sau lưng.</p>
+    <div class="grid2">
+      <div class="infoBox"><b>🎯 Mục tiêu</b><p>Khám phá văn phòng, tìm manh mối, tự suy luận cách xử lý đúng trước khi khói độc lấp đầy phòng.</p></div>
+      <div class="infoBox"><b>⚠️ Hãy cẩn thận</b><p>Không phải cháy nào cũng dập giống nhau. Chọn sai cách có thể làm lửa bùng to hơn hoặc gây nguy hiểm cho bạn.</p></div>
+      <div class="infoBox"><b>🕹️ Điều khiển PC</b><p>WASD di chuyển, E tương tác, giữ F để xịt. Click vào màn hình để khóa chuột — nếu chuột không khóa được, cứ <b>giữ và kéo chuột</b> để nhìn xung quanh.</p></div>
+      <div class="infoBox"><b>📱 Điều khiển mobile</b><p>Joystick trái để đi, vuốt phải màn hình để nhìn, nút E và XỊT ở góc phải.</p></div>
+    </div>
+    <div class="infoBox"><b>🚪 Cách di chuyển khi đang ở trong đám cháy (ngoài đời thật)</b><p>1) <b>Khom thấp người, bò sát sàn nếu khói dày</b> — khói và khí nóng bay lên cao, lớp không khí sát sàn thường ít khói và mát hơn (không hẳn là sạch).<br>2) <b>Dùng khăn/vải sẵn có che mũi miệng tạm thời</b> nếu đang ở ngay bên cạnh — nhưng khăn (kể cả khăn ướt) <b>không lọc được khí độc</b> như CO, nên <b>đừng mất thời gian tìm khăn hay nước</b>; ưu tiên thoát ra ngay.<br>3) <b>Sờ mu bàn tay lên cửa/tay nắm trước khi mở</b> — nếu nóng, không mở, tìm lối khác.<br>4) <b>Bám sát tường</b> lần theo hướng biển EXIT gần nhất, <b>tuyệt đối không dùng thang máy</b>.<br>5) Ra ngoài tới <b>điểm tập kết an toàn</b>, gọi <b>114</b>, không quay lại lấy đồ.</p></div>
+    <div class="kbdRow"><span>⏱️ 3 phút trước khi khói quá dày</span><span>🧯 Kiến thức PCCC thật</span><span>🏆 Thắng khi lửa về 0%</span></div>
+    <div style="height:14px"></div>
+    <button class="btn btnPrimary" id="btnStart">▶ BẮT ĐẦU — TÔI NGỬI THẤY MÙI KHÉT!</button>
+    <p style="text-align:center;font-size:12px;margin-top:10px">Mẹo: Quan sát kỹ xung quanh, đọc các bảng hướng dẫn trong phòng và suy nghĩ trước khi hành động.</p>
+  </div>
+</div>
+
+<!-- QUIZ / DIALOG -->
+<div class="overlay hidden" id="dialogOverlay">
+  <div class="panel" id="dialogPanel">
+    <span class="badge" id="dialogBadge">💡 Tình huống</span>
+    <h1 style="font-size:22px" id="dialogTitle">Bạn phát hiện máy in cháy!</h1>
+    <p id="dialogText"></p>
+    <div id="dialogChoices"></div>
+    <div style="height:10px"></div>
+    <button class="btn btnGhost hidden" id="dialogClose">Đã hiểu, tiếp tục</button>
+  </div>
+</div>
+
+<!-- WIN -->
+<div class="overlay hidden" id="winScreen">
+  <div class="panel" style="text-align:center">
+    <span class="badge" style="background:#dcfce7;color:#14532d;border-color:#bbf7d0">✅ Hoàn thành xuất sắc</span>
+    <h1>Lửa đã tắt! <em style="color:#16a34a">Văn phòng an toàn</em> 🎉</h1>
+    <p id="winDesc">Bạn đã xử lý đúng quy trình PCCC: ngắt điện, dùng bình CO₂ cho cháy điện và dập lửa kịp thời.</p>
+    <div id="winStats">
+      <div class="winStat"><span id="winTime">--</span><label>Thời gian</label></div>
+      <div class="winStat"><span id="winScore">0</span><label>Điểm</label></div>
+      <div class="winStat"><span id="winRank">--</span><label>Xếp hạng</label></div>
+    </div>
+    <div class="infoBox" style="text-align:left"><b>📚 Bài học PCCC bạn vừa áp dụng:</b><p>1) Cháy điện: ngắt cầu dao trước. 2) Không dùng nước. 3) Dùng bình CO₂ (hoặc bột) cho thiết bị điện. 4) Gọi 114 khi lửa lớn. 5) PASS: Rút chốt – Bóp cò – Quét gốc lửa. 6) Di chuyển trong đám cháy: khom thấp người tránh lớp khói, bám tường tìm EXIT gần nhất, không dùng thang máy, không trì hoãn để tìm đồ.</p></div>
+    <div style="height:12px"></div>
+    <button class="btn btnPrimary" onclick="location.reload()">↻ CHƠI LẠI</button>
+  </div>
+</div>
+
+<!-- LOSE -->
+<div class="overlay hidden" id="loseScreen">
+  <div class="panel" style="text-align:center">
+    <span class="badge">😮‍💨 Khói quá dày</span>
+    <h1>Bạn bị ngợp khói!</h1>
+    <p id="loseReason">Hết thời gian. Lần sau hãy ưu tiên ngắt điện và lấy bình CO₂ thật nhanh, đừng chần chừ ở khu vực khói.</p>
+    <button class="btn btnPrimary" onclick="location.reload()">↻ THỬ LẠI</button>
+  </div>
+</div>
+
+<script>
+// ============ GAME STATE ============
+let gameStarted=false, gameOver=false;
+let yaw=0, pitch=0, keys={};
+let hasExtinguisher=null; // null | 'CO2' | 'WATER' | 'FOAM'
+let breakerOff=false, seenFire=false, quizDone=false, posterRead=false;
+let fireHealth=100, score=0, timeLeft=180, smokeLevel=12;
+let spraying=false, sprayingMobile=false;
+let tipLowShown=false, tipExitShown=false;
+let startTime=null, elapsed=0;
+let player={x:2.25,z:5.55,speed:3.4};
+let interactTarget=null;
+
+// Audio tiny synth
+let audioCtx=null;
+function beep(freq=880,dur=0.12,type='sine',vol=0.12){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type;o.frequency.value=freq;g.gain.value=vol;
+    o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+// Extinguisher hiss: looping filtered noise while spraying
+let hissNode=null,hissGain=null;
+function startHiss(){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    if(hissNode) return;
+    const len=audioCtx.sampleRate;const buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate);const d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    hissNode=audioCtx.createBufferSource();hissNode.buffer=buf;hissNode.loop=true;
+    const filt=audioCtx.createBiquadFilter();filt.type='highpass';filt.frequency.value=1100;
+    hissGain=audioCtx.createGain();hissGain.gain.value=0;hissGain.gain.linearRampToValueAtTime(0.11,audioCtx.currentTime+0.08);
+    hissNode.connect(filt);filt.connect(hissGain);hissGain.connect(audioCtx.destination);hissNode.start();
+  }catch(e){}
+}
+function stopHiss(){
+  if(!hissNode) return;
+  try{const n=hissNode,g=hissGain;hissNode=null;hissGain=null;g.gain.linearRampToValueAtTime(0.0001,audioCtx.currentTime+0.1);setTimeout(()=>{try{n.stop()}catch(e){}},160);}catch(e){}
+}
+// Throttled warning toast (prevents beep/toast spam every frame)
+let lastWarn=0;
+function toastThrottled(msg,color){const now=Date.now();if(now-lastWarn>2200){lastWarn=now;showToast(msg,color||'#dc2626',1900);}}
+
+// ============ THREE SETUP ============
+const canvas=document.getElementById('three');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x1a2332);
+scene.fog=new THREE.FogExp2(0x2a2a2a,0.012);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,100);
+camera.position.set(2.25,1.65,5.55);
+
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+scene.add(new THREE.AmbientLight(0xffffff,0.65));
+const dirLight=new THREE.DirectionalLight(0xfff2cc,0.9);dirLight.position.set(5,10,4);dirLight.castShadow=true;scene.add(dirLight);
+const fireLight=new THREE.PointLight(0xff4400,2.2,9,1.6);fireLight.position.set(-7,1.2,-4.6);scene.add(fireLight);
+
+// Materials helpers
+function box(w,h,d,color,x,y,z,ry=0){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:0.85}));
+  m.position.set(x,y,z);m.rotation.y=ry;m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+}
+function cyl(rt,rb,h,color,x,y,z){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,18),new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.25}));
+  m.position.set(x,y,z);m.castShadow=true;scene.add(m);return m;
+}
+
+// Floor & walls
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(20,14),new THREE.MeshStandardMaterial({color:0x9a8a7a,roughness:0.9}));
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+// carpet center
+const carpet=new THREE.Mesh(new THREE.PlaneGeometry(12,7),new THREE.MeshStandardMaterial({color:0x334155}));
+carpet.rotation.x=-Math.PI/2;carpet.position.set(0,0.01,0);scene.add(carpet);
+
+box(20,3.2,0.3,0xe8e0d4,0,1.6,-7); // north wall
+box(20,3.2,0.3,0xe8e0d4,0,1.6,7);
+box(0.3,3.2,14,0xe8e0d4,-10,1.6,0);
+box(0.3,3.2,14,0xe8e0d4,10,1.6,0);
+box(20,0.2,14,0xf5f0e8,0,3.25,0); // ceiling
+
+// Windows glowing on south wall
+for(let i=-6;i<=6;i+=4){
+  const win=box(2.6,1.4,0.05,0xbae6fd,i,1.8,6.82);win.material.emissive=new THREE.Color(0x7dd3fc);win.material.emissiveIntensity=0.35;
+}
+
+// Desks rows
+const colliders=[];
+function addCollider(x,z,w,d){colliders.push({x,z,w,d});}
+function createDesk(x,z,label){
+  box(2.2,0.08,1.1,0x92400e,x,0.78,z);
+  box(0.08,0.78,0.9,0x78350f,x-1,z,0);box(0.08,0.78,0.9,0x78350f,x+1,z,0);
+  // monitor
+  const mon=box(0.9,0.55,0.05,0x111827,x,1.15,z-0.25);
+  const scr=box(0.82,0.47,0.02,0x22d3ee,x,1.15,z-0.22);scr.material.emissive=new THREE.Color(0x0891b2);scr.material.emissiveIntensity=0.7;
+  box(0.5,0.05,0.28,0x1f2937,x,0.84,z+0.08); // keyboard
+  // chair
+  cyl(0.28,0.32,0.08,0xdc2626,x,0.48,z+0.75);
+  box(0.55,0.6,0.08,0x991b1b,x,0.95,z+1.02);
+  addCollider(x,z,2.4,1.3);
+}
+createDesk(-3,2.5);createDesk(0.5,2.5);createDesk(4,2.5);
+createDesk(-3,-0.8);createDesk(0.5,-0.8);createDesk(4,-0.8);
+// player desk special (start)
+const myDeskText=box(2.4,0.08,1.2,0x0f766e,0,0.78,5.0);addCollider(0,5.0,2.5,1.3);
+
+// Printer corner - FIRE SOURCE
+box(1.1,0.9,0.9,0xe5e7eb,-7,0.45,-4.9);
+box(0.9,0.25,0.7,0x111827,-7,1.02,-4.9);
+box(1.3,0.75,0.45,0xd1d5db,-8.2,0.37,-4.9); // paper stack
+addCollider(-7,-4.9,1.4,1.1);
+
+// Fire group
+const fireGroup=new THREE.Group();fireGroup.position.set(-7,1.15,-4.9);scene.add(fireGroup);
+const fireMats=[];
+for(let i=0;i<5;i++){
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(0.28-i*0.03,0.9+i*0.12,8),new THREE.MeshStandardMaterial({color:i%2?0xff6b00:0xffb703,emissive:i%2?0xff3300:0xff8800,emissiveIntensity:1.6,transparent:true,opacity:0.92}));
+  cone.position.set((Math.random()-0.5)*0.4,0.35,(Math.random()-0.5)*0.3);fireGroup.add(cone);fireMats.push(cone);
+}
+// Smoke particles
+const smokeCount=260;const smokePos=new Float32Array(smokeCount*3);const smokeVel=[];
+for(let i=0;i<smokeCount;i++){smokePos[i*3]=-7+(Math.random()-0.5)*1.2;smokePos[i*3+1]=1.3+Math.random()*2.5;smokePos[i*3+2]=-4.9+(Math.random()-0.5)*1;smokeVel.push(0.25+Math.random()*0.5);}
+const smokeGeo=new THREE.BufferGeometry();smokeGeo.setAttribute('position',new THREE.BufferAttribute(smokePos,3));
+const smokeMat=new THREE.PointsMaterial({color:0x9ca3af,size:0.55,transparent:true,opacity:0.42,depthWrite:false});
+const smokePoints=new THREE.Points(smokeGeo,smokeMat);scene.add(smokePoints);
+
+// Spray particles
+const sprayCount=120;const sprayPos=new Float32Array(sprayCount*3);
+for(let i=0;i<sprayCount;i++){sprayPos[i*3]=999;sprayPos[i*3+1]=999;sprayPos[i*3+2]=999;}
+const sprayGeo=new THREE.BufferGeometry();sprayGeo.setAttribute('position',new THREE.BufferAttribute(sprayPos,3));
+const sprayPoints=new THREE.Points(sprayGeo,new THREE.PointsMaterial({color:0xffffff,size:0.22,transparent:true,opacity:0.9}));scene.add(sprayPoints);
+// Particle pool with velocity & life so the spray looks like a real gas cone
+const sprayParts=[];
+for(let i=0;i<sprayCount;i++) sprayParts.push({life:0,x:999,y:999,z:999,vx:0,vy:0,vz:0});
+function updateSprayParticles(dt,active){
+  const pos=sprayGeo.attributes.position.array;
+  const cp=Math.cos(pitch);
+  const fx=-Math.sin(yaw)*cp, fy=Math.sin(pitch), fz=-Math.cos(yaw)*cp;
+  const rx=Math.cos(yaw), rz=-Math.sin(yaw);
+  if(active){
+    startHiss();
+    for(let i=0;i<sprayCount;i++){
+      const p=sprayParts[i];
+      if(p.life<=0&&Math.random()<0.85){
+        p.life=0.35+Math.random()*0.5;
+        const sp=3.8+Math.random()*2.6;
+        p.x=camera.position.x+rx*0.3;p.y=camera.position.y-0.26;p.z=camera.position.z+rz*0.3;
+        p.vx=fx*sp+(Math.random()-0.5)*0.8;p.vy=fy*sp+(Math.random()-0.5)*0.6;p.vz=fz*sp+(Math.random()-0.5)*0.8;
+      }
+    }
+  } else stopHiss();
+  for(let i=0;i<sprayCount;i++){
+    const p=sprayParts[i];
+    if(p.life>0){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=1.4*dt;pos[i*3]=p.x;pos[i*3+1]=Math.max(0.04,p.y);pos[i*3+2]=p.z;}
+    else{pos[i*3]=999;pos[i*3+1]=999;pos[i*3+2]=999;}
+  }
+  sprayGeo.attributes.position.needsUpdate=true;
+}
+
+// Objects: Extinguishers, breaker, bucket, poster
+const interactables=[];
+
+function makeExtinguisher(x,z,type){
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  const body=cyl(0.16,0.16,0.55,type==='CO2'?0xdc2626:type==='FOAM'?0xf59e0b:0xc0c0c0,x,0.45,z); // note cyl adds to scene, move? We'll keep group simple: recreate manually
+  // Instead use meshes in group
+  g.clear();
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.55,16),new THREE.MeshStandardMaterial({color:type==='CO2'?0xdc2626:type==='FOAM'?0xf59e0b:0x9ca3af,metalness:0.3,roughness:0.4}));b.position.y=0.45;g.add(b);
+  const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.06,0.22,10),new THREE.MeshStandardMaterial({color:0x111827}));nozzle.position.set(0.13,0.78,0);nozzle.rotation.z=-0.6;g.add(nozzle);
+  const label=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.18,0.02),new THREE.MeshStandardMaterial({color:0xffffff}));label.position.set(0,0.48,0.16);g.add(label);
+  g.userData={type};
+  interactables.push({group:g,x,z,id:'ext_'+type,title:type==='CO2'?'Bình CO₂ (đỏ, loa đen)':type==='FOAM'?'Bình bọt Foam (vàng)':'Bình nước (bạc)',desc:type});
+  addCollider(x,z,0.5,0.5);
+  return g;
+}
+makeExtinguisher(6.2,-4.2,'CO2');
+makeExtinguisher(7.4,-4.2,'FOAM');
+makeExtinguisher(5.0,-4.2,'WATER');
+// Remove stray cyl created in makeExtinguisher first call artifacts (they are at same pos overlapping, hide by moving)
+scene.children.filter(o=>o.geometry && o.geometry.type==='CylinderGeometry' && o.position.y===0.45).forEach(o=>{if(o.position.x>4) o.visible=false;});
+
+// Water bucket decoy
+const bucket=cyl(0.28,0.22,0.42,0x2563eb,-1.8,0.21,-3.2);
+const waterTop=cyl(0.26,0.26,0.02,0x60a5fa,-1.8,0.43,-3.2);
+interactables.push({x:-1.8,z:-3.2,id:'bucket',title:'Xô nước',desc:'bucket'});addCollider(-1.8,-3.2,0.6,0.6);
+
+// Breaker panel east wall
+box(0.12,0.9,0.7,0x374151,9.82,1.5,1.8);
+const lever=box(0.08,0.28,0.08,0xf59e0b,9.74,1.55,1.8);
+interactables.push({x:9.2,z:1.8,mesh:lever,id:'breaker',title:'Tủ cầu dao điện',desc:'breaker'});addCollider(9.5,1.8,0.6,0.8);
+
+// Poster PCCC north wall
+const poster=box(1.6,1.1,0.05,0xfff7ed,-1.5,1.7,-6.82);poster.material.emissive=new THREE.Color(0xffffff);poster.material.emissiveIntensity=0.08;
+interactables.push({x:-1.5,z:-6.2,id:'poster',title:'Bảng hướng dẫn PCCC',desc:'poster'});
+
+// Phone on desk
+box(0.28,0.06,0.2,0x111827,1.2,0.85,5.0);
+interactables.push({x:1.2,z:5.0,id:'phone',title:'Điện thoại bàn — gọi 114',desc:'phone'});
+
+// Exit door south
+box(1.2,2.2,0.08,0x16a34a,8.5,1.1,6.82);
+interactables.push({x:8.5,z:6.2,id:'exit',title:'Cửa thoát hiểm',desc:'exit'});
+
+// Plants, cabinets
+cyl(0.22,0.28,0.4,0x92400e,8.8,0.2,-5.8);cyl(0.35,0.12,0.7,0x16a34a,8.8,0.75,-5.8);
+box(1.8,1.1,0.5,0x6b7280,8.9,0.55,3.8);addCollider(8.9,3.8,1.9,0.7);
+box(0.9,1.6,0.4,0x9ca3af,-9.3,0.8,2.5);addCollider(-9.3,2.5,1,0.6);
+
+// ============ UI HELPERS ============
+const objectiveText=document.getElementById('objectiveText');
+const subObjective=document.getElementById('subObjective');
+const toastEl=document.getElementById('toast');
+const promptEl=document.getElementById('prompt');
+function showToast(msg,color='#dc2626',ms=2600){toastEl.textContent=msg;toastEl.style.background=color;toastEl.style.display='block';clearTimeout(showToast.t);showToast.t=setTimeout(()=>toastEl.style.display='none',ms);beep(color==='#dc2626'?220:660,0.15,'square',0.08);}
+function addScore(n){score+=n;document.getElementById('score').textContent=score;}
+function setTask(id,state){const el=document.getElementById(id);if(!el)return;el.className='task '+state;el.querySelector('.dot').textContent=state==='done'?'✓':el.querySelector('.dot').textContent.replace('✓','•');}
+function updateObjective(main,sub){objectiveText.textContent=main;subObjective.textContent=sub;}
+function dialog(title,text,choices,badge='💡 Tình huống'){
+  document.getElementById('dialogTitle').textContent=title;
+  document.getElementById('dialogText').innerHTML=text;
+  document.getElementById('dialogBadge').textContent=badge;
+  const wrap=document.getElementById('dialogChoices');wrap.innerHTML='';
+  const closeBtn=document.getElementById('dialogClose');
+  if(choices&&choices.length){
+    closeBtn.classList.add('hidden');
+    choices.forEach(c=>{
+      const b=document.createElement('button');b.className='choiceBtn';b.innerHTML=c.label;b.onclick=()=>{c.onClick();};
+      wrap.appendChild(b);
+    });
+  } else closeBtn.classList.remove('hidden');
+  document.getElementById('dialogOverlay').classList.remove('hidden');
+  document.exitPointerLock&&document.exitPointerLock();
+}
+document.getElementById('dialogClose').onclick=()=>{document.getElementById('dialogOverlay').classList.add('hidden');lockPointer();};
+
+// ============ INTERACTION LOGIC ============
+function handleInteract(obj){
+  if(!obj) return;
+  if(obj.id==='poster'){
+    posterRead=true;addScore(10);
+    dialog('📋 Bảng PCCC trên tường','<b>Cháy điện (máy in, ổ điện):</b><br>1) Ngắt cầu dao ngay<br>2) <b>TUYỆT ĐỐI không dùng nước</b> — gây giật & chập<br>3) Dùng bình <b>CO₂</b> (bình đỏ, loa đen) hoặc bình bột<br>4) Gọi <b>114</b> nếu lửa lớn<br><br><i>Bạn đã đọc hướng dẫn (+10 điểm)</i>',null,'📋 Kiến thức PCCC');
+    setTask('task-quiz','active');return;
+  }
+  if(obj.id==='phone'){
+    addScore(15);showToast('☎️ Đã gọi 114! Lực lượng PCCC đang đến. Bạn vẫn cần dập lửa nhỏ ngay.','#0f766e');beep(880,0.2);return;
+  }
+  if(obj.id==='exit'){
+    if(fireHealth>70 && !seenFire){showToast('Bạn chưa tìm thấy nguồn cháy. Hãy đi theo mùi khét trước!','#ea580c');}
+    else showToast('Đừng bỏ chạy khi lửa còn nhỏ & bạn có thể dập an toàn. Hãy xử lý đúng quy trình!','#ea580c');return;
+  }
+  if(obj.id==='bucket'){
+    dialog('🪣 Bạn định dùng xô nước?','Đây là cháy điện từ máy in. Đổ nước vào sẽ gây chập điện, điện giật và làm lửa lan theo nước. Bạn có chắc?',[
+      {label:'💧 Vẫn đổ nước (nguy hiểm)',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');fireHealth=Math.min(130,fireHealth+25);smokeLevel+=18;showToast('⚡ CHẬP ĐIỆN! Lửa bùng to hơn! Đừng dùng nước cho cháy điện!');beep(110,0.4,'sawtooth',0.15);updateFireUI();}},
+      {label:'✅ Không dùng nước — tìm bình CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');addScore(20);showToast('Đúng! Cháy điện không dùng nước. Tìm bình CO₂ đỏ.','#0f766e');quizDone=true;setTask('task-quiz','done');setTask('task-breaker','active');setTask('task-ext','active');updateObjective('Ngắt điện & lấy bình CO₂','Tủ điện ở tường Đông (x=9). Bình CO₂ đỏ ở góc Đông-Bắc.');}}
+    ]);return;
+  }
+  if(obj.id==='breaker'){
+    if(breakerOff){showToast('Cầu dao đã NGẮT. Điện đã an toàn.','#0f766e');return;}
+    breakerOff=true;lever.rotation.x=0.9;lever.material.color.set(0x16a34a);
+    document.getElementById('invBreakerText').textContent='Điện: ĐÃ NGẮT ✅';addScore(30);
+    showToast('⚡ Đã ngắt cầu dao! Giờ an toàn để dập lửa.','#0f766e');beep(520,0.15);
+    setTask('task-breaker','done');
+    if(hasExtinguisher==='CO2') setTask('task-spray','active');
+    updateObjective(hasExtinguisher==='CO2'?'Đến gần máy in & giữ F để xịt CO₂':'Lấy bình CO₂ đỏ ở góc phòng','Bình CO₂ ở gần tường Bắc phía Đông. Tránh bình vàng/bạc.');
+    return;
+  }
+  if(obj.id.startsWith('ext_')){
+    const type=obj.desc;
+    if(type==='CO2'){
+      hasExtinguisher='CO2';addScore(25);
+      document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>🧯</span><label>Bình CO₂<br>Đúng loại!</label>';
+      showToast('🧯 Đã lấy bình CO₂ — đúng cho cháy điện!','#0f766e');beep(740,0.12);
+      setTask('task-ext','done');if(breakerOff) setTask('task-spray','active');
+      updateObjective(breakerOff?'Dập lửa: đến gần máy in, giữ F':'Ngắt cầu dao trước khi xịt','Tủ điện ở tường phía Đông. Xịt khi chưa ngắt điện rất nguy hiểm.');
+      // hide extinguisher group
+      const g=interactables.find(o=>o.id==='ext_CO2');if(g&&g.group)g.group.visible=false;
+    } else if(type==='FOAM'){
+      dialog('⚠️ Bình bọt Foam (vàng)','Bình bọt chủ yếu cho cháy chất lỏng (xăng dầu). Với cháy điện, bọt chứa nước vẫn có nguy cơ dẫn điện và hiệu quả kém hơn CO₂. Bạn có lấy không?',[
+        {label:'Lấy bình Foam (không tối ưu)',onClick:()=>{hasExtinguisher='FOAM';document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>🧯</span><label>Bình Foam<br>Chưa đúng</label>';document.getElementById('dialogOverlay').classList.add('hidden');showToast('Bình Foam chưa phải lựa chọn tốt nhất cho cháy điện. Hãy tìm CO₂.','#ea580c');}},
+        {label:'Để lại, tìm bình CO₂ đỏ',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');addScore(10);showToast('Đúng! Tìm bình đỏ CO₂.','#0f766e');}}
+      ]);
+    } else {
+      dialog('⚠️ Bình nước (bạc)','Bình này phun nước — cực kỳ nguy hiểm với cháy điện. Chỉ dùng cho cháy gỗ/giấy khi đã ngắt điện hoàn toàn.',[
+        {label:'Vẫn lấy bình nước',onClick:()=>{hasExtinguisher='WATER';document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>💧</span><label>Bình nước<br>Nguy hiểm!</label>';document.getElementById('dialogOverlay').classList.add('hidden');showToast('⚠️ Cầm bình nước gần cháy điện rất nguy hiểm!','#dc2626');}},
+        {label:'Không lấy — tìm CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');addScore(10);}}
+      ]);
+    }
+    return;
+  }
+  if(obj.id==='fire'){
+    // handled in proximity trigger
+  }
+}
+
+// Fire proximity trigger
+let fireDialogShown=false;
+function checkFireProximity(){
+  const dx=player.x-(-7),dz=player.z-(-4.9);const dist=Math.hypot(dx,dz);
+  if(dist<2.6 && !seenFire){
+    seenFire=true;addScore(20);setTask('task-find','done');setTask('task-quiz','active');
+    showToast('🔥 Tìm thấy rồi! Máy in đang cháy!','#dc2626',3000);
+    if(!fireDialogShown){
+      fireDialogShown=true;
+      setTimeout(()=>{
+        dialog('🔥 Máy in bốc cháy — cháy điện!','Khói đen, tia lửa điện và mùi khét nồng nặc. Máy in đang cháy do chập điện. Bạn sẽ làm gì đầu tiên?',[
+          {label:'💧 Đổ nước vào máy in cho tắt',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');fireHealth=118;smokeLevel+=15;showToast('⚡ SAI! Nước + điện = giật & chập. Lửa to hơn! Hãy đọc bảng PCCC.');updateFireUI();beep(120,0.4,'sawtooth',0.16);}},
+          {label:'⚡ Ngắt cầu dao, rồi dùng bình CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');quizDone=true;addScore(30);setTask('task-quiz','done');setTask('task-breaker','active');setTask('task-ext','active');showToast('✅ ĐÚNG QUY TRÌNH! Ngắt điện → CO₂.','#0f766e');updateObjective('Ngắt cầu dao & lấy bình CO₂','Tủ điện tường Đông • Bình CO₂ đỏ góc Đông-Bắc');}},
+          {label:'💨 Quạt mạnh cho khói tan',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');fireHealth+=10;showToast('Sai! Quạt cấp oxy làm lửa bùng mạnh hơn!');updateFireUI();}}
+        ],'🚨 Quyết định nhanh');
+      },400);
+    }
+  }
+}
+
+function updateFireUI(){
+  document.getElementById('fireFill').style.width=Math.max(0,Math.min(100,fireHealth))+'%';
+  document.getElementById('firePct').textContent=Math.max(0,Math.round(fireHealth))+'%';
+}
+
+// ============ CONTROLS ============
+function lockPointer(){
+  try{const p=canvas.requestPointerLock&&canvas.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}catch(e){}
+}
+canvas.addEventListener('click',()=>{if(gameStarted&&!gameOver) lockPointer();});
+document.addEventListener('mousemove',e=>{
+  if(document.pointerLockElement===canvas){yaw-=e.movementX*0.0022;pitch-=e.movementY*0.0022;pitch=Math.max(-1.2,Math.min(1.2,pitch));}
+});
+// Fallback drag-look: hold & drag the mouse to look around. This always works,
+// even when the browser blocks pointer lock (e.g. the game runs inside an iframe).
+let mouseDragging=false,lastMX=0,lastMY=0;
+canvas.addEventListener('mousedown',e=>{mouseDragging=true;lastMX=e.clientX;lastMY=e.clientY;});
+addEventListener('mousemove',e=>{
+  if(document.pointerLockElement===canvas||!mouseDragging) return;
+  yaw-=(e.clientX-lastMX)*0.004;pitch-=(e.clientY-lastMY)*0.004;pitch=Math.max(-1.2,Math.min(1.2,pitch));
+  lastMX=e.clientX;lastMY=e.clientY;
+});
+addEventListener('mouseup',()=>mouseDragging=false);
+document.addEventListener('pointerlockerror',()=>{showToast('Trình duyệt không cho khóa chuột — cứ GIỮ & KÉO chuột để nhìn xung quanh nhé.','#0f766e',3600);});
+// Touch-capable devices get the on-screen controls even if pointer:coarse misses them
+if(('ontouchstart' in window)||navigator.maxTouchPoints>0) document.body.classList.add('touch');
+let dragLook=false,lastTouchX=0,lastTouchY=0;
+canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){lastTouchX=e.touches[0].clientX;lastTouchY=e.touches[0].clientY;}}, {passive:true});
+canvas.addEventListener('touchmove',e=>{
+  const t=e.touches[0];if(t.clientX>innerWidth*0.45){yaw-=(t.clientX-lastTouchX)*0.005;pitch-=(t.clientY-lastTouchY)*0.005;pitch=Math.max(-1.2,Math.min(1.2,pitch));}
+  lastTouchX=t.clientX;lastTouchY=t.clientY;
+},{passive:true});
+
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE') tryInteract();if(e.code==='KeyF') spraying=true;});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyF') spraying=false;});
+
+// Joystick
+const joy=document.getElementById('joystick'),stick=document.getElementById('stick');
+let joyVec={x:0,y:0},joyId=null;
+joy.addEventListener('touchstart',e=>{joyId=e.changedTouches[0].identifier;},{passive:true});
+addEventListener('touchmove',e=>{
+  for(const t of e.changedTouches) if(t.identifier===joyId){
+    const r=joy.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;
+    let dx=t.clientX-cx,dy=t.clientY-cy;const len=Math.hypot(dx,dy);const max=36;
+    if(len>max){dx=dx/len*max;dy=dy/len*max;}
+    stick.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+    joyVec.x=dx/max;joyVec.y=dy/max;
+  }
+},{passive:true});
+addEventListener('touchend',e=>{for(const t of e.changedTouches) if(t.identifier===joyId){joyId=null;joyVec={x:0,y:0};stick.style.transform='translate(-50%,-50%)';}});
+
+document.getElementById('btnInteract').addEventListener('touchstart',e=>{e.preventDefault();tryInteract();});
+const btnSpray=document.getElementById('btnSpray');
+btnSpray.addEventListener('touchstart',e=>{e.preventDefault();sprayingMobile=true;});
+btnSpray.addEventListener('touchend',()=>sprayingMobile=false);
+
+function tryInteract(){if(interactTarget) handleInteract(interactTarget);else if(seenFire){ /* near fire but no target */ }}
+
+// Find nearest interactable
+function getNearest(){
+  let best=null,bestDist=3.2;
+  // fire as interactable virtual
+  const fireDist=Math.hypot(player.x+7,player.z+4.9);
+  if(fireDist<3) { /* not button, spraying */ }
+  for(const o of interactables){
+    if(o.group&&o.group.visible===false) continue;
+    const d=Math.hypot(player.x-o.x,player.z-o.z);
+    if(d<bestDist){bestDist=d;best=o;}
+  }
+  return best;
+}
+
+// Minimap
+const mm=document.getElementById('minimap').getContext('2d');
+function drawMinimap(){
+  mm.clearRect(0,0,264,192);mm.fillStyle='#1f2937';mm.fillRect(0,0,264,192);
+  mm.strokeStyle='#4b5563';mm.strokeRect(6,6,252,180);
+  // desks
+  mm.fillStyle='#92400e';[[-3,2.5],[0.5,2.5],[4,2.5],[-3,-0.8],[0.5,-0.8],[4,-0.8]].forEach(p=>{mm.fillRect(132+p[0]*11-14,96-p[1]*11-8,28,16);});
+  // fire
+  const fp={x:132-7*11,y:96-(-4.9)*11};mm.fillStyle=fireHealth>0?'#ef4444':'#22c55e';mm.beginPath();mm.arc(fp.x,fp.y,8,0,7);mm.fill();mm.fillStyle='#fff';mm.font='10px sans-serif';mm.fillText('🔥',fp.x-7,fp.y+4);
+  // breaker & ext
+  mm.fillStyle='#f59e0b';mm.fillRect(132+9*11-5,96-1.8*11-5,10,10);
+  mm.fillStyle='#dc2626';mm.beginPath();mm.arc(132+6.2*11,96-(-4.2)*11,6,0,7);mm.fill();
+  // player
+  const px=132+player.x*11,py=96-player.z*11;mm.fillStyle='#fff';mm.beginPath();mm.arc(px,py,6,0,7);mm.fill();mm.strokeStyle='#0ea5e9';mm.lineWidth=2;mm.stroke();
+  mm.fillStyle='#e5e7eb';mm.font='9px sans-serif';mm.fillText('Bạn',px+8,py+3);mm.fillText('Cầu dao',132+9*11+7,96-1.8*11);mm.fillText('CO₂',132+6.2*11+8,96-(-4.2)*11);
+}
+
+// ============ MAIN LOOP ============
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);const t=clock.elapsedTime;
+  let sprayActive=false;
+  if(gameStarted&&!gameOver){
+    // movement
+    let fwd=0,str=0;
+    if(keys['KeyW']||keys['ArrowUp']) fwd+=1;if(keys['KeyS']||keys['ArrowDown']) fwd-=1;
+    if(keys['KeyA']||keys['ArrowLeft']) str-=1;if(keys['KeyD']||keys['ArrowRight']) str+=1;
+    fwd+=-joyVec.y;str+=joyVec.x;
+    const run=(keys['ShiftLeft']||keys['ShiftRight'])?1.7:1;
+    const sp=player.speed*run*dt;
+    const forwardX=-Math.sin(yaw), forwardZ=-Math.cos(yaw);
+    const rightX=Math.cos(yaw), rightZ=-Math.sin(yaw);
+    // Normalize diagonal movement so W+D is not faster than W alone
+    const moveLen=Math.hypot(fwd,str);
+    const norm=moveLen>1?1/moveLen:1;
+    let nx=player.x+(forwardX*fwd+rightX*str)*sp*norm;
+    let nz=player.z+(forwardZ*fwd+rightZ*str)*sp*norm;
+    nx=Math.max(-9.4,Math.min(9.4,nx));nz=Math.max(-6.4,Math.min(6.4,nz));
+    // Collision: test each axis separately so the player slides along
+    // furniture instead of freezing when the combined move clips a corner.
+    function hitsCollider(px,pz){
+      for(const c of colliders){
+        if(Math.abs(px-c.x)<c.w/2+0.32&&Math.abs(pz-c.z)<c.d/2+0.32) return true;
+      }
+      return false;
+    }
+    if(!hitsCollider(nx,player.z)) player.x=nx;
+    if(!hitsCollider(player.x,nz)) player.z=nz;
+    camera.position.set(player.x,1.65+Math.sin(t*2.2)*0.015,player.z);
+    camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
+    checkFireProximity();
+    // interact prompt
+    interactTarget=getNearest();
+    if(interactTarget){promptEl.style.display='block';promptEl.innerHTML=`<kbd>E</kbd> ${interactTarget.title} — nhấn E / nút đỏ`; }
+    else if(Math.hypot(player.x+7,player.z+4.9)<2.8&&hasExtinguisher){promptEl.style.display='block';promptEl.innerHTML=breakerOff?(hasExtinguisher==='CO2'?'🔥 Giữ <kbd>F</kbd> hoặc nút XỊT để dập lửa!':'⚠️ Bình này không phù hợp!'):'⚠️ Chưa ngắt điện! Xịt bây giờ sẽ nguy hiểm';}
+    else promptEl.style.display='none';
+    // spraying logic — the spray cone is visible whenever you hold spray with an extinguisher in hand
+    const nearFire=Math.hypot(player.x+7,player.z+4.9)<3.2;
+    const wantsSpray=(spraying||sprayingMobile)&&hasExtinguisher;
+    sprayActive=false;
+    if(wantsSpray){
+      sprayPoints.material.color.set(hasExtinguisher==='WATER'?0x7dd3fc:hasExtinguisher==='FOAM'?0xfde68a:0xffffff);
+      if(!breakerOff){toastThrottled('⚡ CHƯA NGẮT ĐIỆN! Dừng lại, ngắt cầu dao trước!');}
+      else{
+        sprayActive=true;
+        if(nearFire){
+          if(hasExtinguisher==='WATER'){fireHealth=Math.min(125,fireHealth+54*dt);toastThrottled('💧 Nước làm lửa bùng to hơn! Thả tay ra!');}
+          else if(hasExtinguisher==='FOAM'){fireHealth-=8*dt;toastThrottled('Foam hiệu quả thấp với cháy điện… tìm bình CO₂ đỏ sẽ nhanh hơn','#ea580c');}
+          else if(hasExtinguisher==='CO2'){fireHealth-=22*dt;score+=3*dt;}
+          updateFireUI();
+        }
+      }
+    }
+    if(fireHealth<=0&&!gameOver){fireHealth=0;updateFireUI();winGame();}
+    // smoke & timer
+    smokeLevel=Math.min(100,12+(100-fireHealth)*0.15+elapsed*0.22+(seenFire?6:0));
+    if(fireHealth>0) timeLeft=Math.max(0,180-Math.floor(elapsed));
+    document.getElementById('smokeBar').style.width=smokeLevel+'%';
+    const m=Math.floor(timeLeft/60),s=timeLeft%60;document.getElementById('timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('score').textContent=Math.floor(score);
+    // In-game coaching: how to move through a fire
+    if(seenFire&&!tipLowShown&&smokeLevel>35){tipLowShown=true;showToast('💡 Khói độc bay lên cao — di chuyển trong đám cháy phải KHOM THẤP NGƯỜI, sát sàn!','#0f766e',4400);}
+    if(seenFire&&!tipExitShown&&smokeLevel>62){tipExitShown=true;showToast('💡 Khói đã dày: nếu có sẵn vải thì che mũi tạm thời, bám tường tìm EXIT gần nhất, tuyệt đối không dùng thang máy!','#ea580c',4400);}
+    scene.fog.density=0.008+smokeLevel*0.00035;
+    smokeMat.opacity=0.25+smokeLevel*0.004;
+    if(timeLeft<=0||smokeLevel>=100){loseGame();}
+    elapsed=(Date.now()-startTime)/1000;
+  }
+  // fire animation
+  const fh=Math.max(0.12,fireHealth/100);
+  fireGroup.scale.set(fh, fh*(0.9+Math.sin(t*9)*0.12), fh);
+  fireGroup.children.forEach((c,i)=>{c.rotation.y=t*(1+i*0.3);c.scale.y=1+Math.sin(t*11+i)*0.18;});
+  fireLight.intensity=fireHealth>0?1.6+Math.sin(t*13)*0.6:0;
+  scene.fog.color.setHSL(0,0,0.16-smokeLevel*0.0005);
+  // smoke rise
+  const sp=smokeGeo.attributes.position.array;
+  for(let i=0;i<smokeCount;i++){sp[i*3+1]+=smokeVel[i]*dt*(fireHealth>0?1:0.25);sp[i*3]+=Math.sin(t+i)*0.0015;
+    if(sp[i*3+1]>3.4){sp[i*3+1]=1.25;sp[i*3]=-7+(Math.random()-0.5)*1.1;sp[i*3+2]=-4.9+(Math.random()-0.5)*0.9;}}
+  smokeGeo.attributes.position.needsUpdate=true;
+  updateSprayParticles(dt,sprayActive);
+  drawMinimap();
+  renderer.render(scene,camera);
+}
+animate();updateFireUI();
+
+function winGame(){
+  gameOver=true;setTask('task-spray','done');addScore(timeLeft*2);
+  document.getElementById('winTime').textContent=`${Math.floor(elapsed/60)}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`;
+  document.getElementById('winScore').textContent=Math.floor(score);
+  document.getElementById('winRank').textContent=score>180?'S ⭐':score>130?'A':'B';
+  document.getElementById('winDesc').textContent=`Bạn dập tắt lửa trong ${Math.floor(elapsed)} giây, đúng quy trình PCCC và ghi ${Math.floor(score)} điểm. Khói đã tan, mọi người an toàn!`;
+  document.getElementById('winScreen').classList.remove('hidden');beep(880,0.2);setTimeout(()=>beep(1174,0.25),180);
+  smokeMat.opacity=0.08;scene.fog.density=0.005;
+}
+function loseGame(){
+  if(gameOver) return;gameOver=true;
+  document.getElementById('loseReason').textContent= smokeLevel>=100?'Khói độc đã quá dày. Lần sau hãy ngắt điện và lấy bình CO₂ ngay khi phát hiện, đừng đứng lâu trong khói.':'Hết 3 phút, lửa đã lan rộng. Hãy ưu tiên: ngắt cầu dao (tường Đông) → bình CO₂ đỏ → giữ F dập lửa.';
+  document.getElementById('loseScreen').classList.remove('hidden');
+}
+
+// START
+document.getElementById('btnStart').onclick=()=>{
+  document.getElementById('startScreen').classList.add('hidden');
+  gameStarted=true;startTime=Date.now();yaw=0;pitch=0;player.x=2.25;player.z=5.55; // spawn in the open aisle beside your desk (aligned with the gap between desk rows), facing into the office (north) so W walks straight ahead
+  lockPointer();
+  showToast('👃 Mùi khét từ phía Bắc-Tây… đi kiểm tra ngay!','#ea580c',3400);
+  updateObjective('Tìm nguồn khói & mùi khét','Đi về phía góc Bắc-Tây (máy in). Để ý khói và bảng PCCC trên tường.');
+  beep(660,0.15);
+  // ambient alarm after fire found handled
+  setInterval(()=>{if(seenFire&&fireHealth>0&&!gameOver) beep(980,0.07,'square',0.03);},2400);
+};
+</script>
+</body>
+</html>
