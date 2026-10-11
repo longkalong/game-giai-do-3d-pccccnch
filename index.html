@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="color-scheme" content="light dark"/>
 <link rel="icon" href="data:,"/>
-<title>Mô phỏng PCCC và CNCH 3D v1.261011-2</title>
+<title>Mô phỏng PCCC và CNCH 3D v1.261011-4</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -240,7 +240,7 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 <!-- START -->
 <div class="overlay" id="startScreen">
   <div class="panel">
-    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-2</span>
+    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-4</span>
     <h1>Đang làm việc bỗng <em>ngửi thấy mùi khét…</em> có khói!</h1>
     <p>Bạn đang làm việc thì ngửi thấy mùi khét lạ, khói bắt đầu lan trong văn phòng. Hãy đi điều tra xem khói từ đâu, suy luận loại cháy và xử lý an toàn. Nếu lửa lớn hoặc khói dày, ưu tiên thoát ra ngoài và gọi 114 — chỉ dập khi lửa còn nhỏ và luôn có lối thoát sau lưng.</p>
     <div class="grid2">
@@ -330,6 +330,8 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
       <text x="278" y="294" font-size="12" fill="#57534e">HÀNH LANG</text>
       <rect x="398" y="342" width="52" height="10" fill="#dc2626"/>
       <text x="424" y="336" text-anchor="middle" font-size="11" fill="#991b1b">🚰 TỦ HỌNG NƯỚC</text>
+      <rect x="330" y="342" width="44" height="10" fill="#b91c1c"/>
+      <text x="352" y="336" text-anchor="middle" font-size="11" fill="#991b1b">🧯 TỦ CHỮA CHÁY</text>
       <text x="578" y="318" text-anchor="end" font-size="12" fill="#14532d">→ ĐIỂM TẬP KẾT AN TOÀN</text>
       <text x="70" y="70" font-size="12" fill="#64748b">VĂN PHÒNG</text>
       <text x="600" y="70" text-anchor="end" font-size="12" fill="#64748b">↑ BẮC</text>
@@ -701,21 +703,46 @@ hallBox(0.3,3.2,5,0xd6d3d1,-2,1.6,9.5); // hall west wall
 hallBox(0.3,3.2,5,0xd6d3d1,10,1.6,9.5); // hall east wall
 hallBox(12,0.2,5,0xf5f0e8,4,3.25,9.5);  // hall ceiling
 const hallLight=new THREE.PointLight(0xfff7ed,0.9,14,1.2);hallLight.position.set(4,2.9,9.5);hallwayGroup.add(hallLight);
-// Red hydrant cabinet on the hallway's south wall (door opens on interact)
-const hoseCabinetBody=hallBox(1.9,1.5,0.35,0xdc2626,4,1.25,11.8);
+// Red hydrant cabinet on the hallway's south wall (door opens on interact).
+// HOLLOW shell (back + frame only, NO solid front): the old solid box buried the
+// hose reel / hydrant / nozzle inside itself, so opening the door showed a flat
+// red slab and players asked "lăng vòi đâu?" — the interior is real geometry now.
+const hoseCabinetBody=new THREE.Group();hoseCabinetBody.position.set(4,1.25,11.82);hallwayGroup.add(hoseCabinetBody);
+(function(){
+  const shellMat=new THREE.MeshStandardMaterial({color:0xdc2626,roughness:0.55,metalness:0.15});
+  const innerMat=new THREE.MeshStandardMaterial({color:0x7f1d1d,roughness:0.8});
+  function panel(w,h,d,mat,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;hoseCabinetBody.add(m);return m;}
+  panel(1.9,1.5,0.06,innerMat,0,0,0.15);        // back board against the wall
+  panel(1.9,0.09,0.34,shellMat,0,0.705,0);     // top frame
+  panel(1.9,0.09,0.34,shellMat,0,-0.705,0);    // bottom frame
+  panel(0.09,1.5,0.34,shellMat,-0.905,0,0);    // left frame
+  panel(0.09,1.5,0.34,shellMat,0.905,0,0);     // right frame
+})();
 const hoseCabinetDoorPivot=new THREE.Group();hoseCabinetDoorPivot.position.set(3.08,1.25,11.6);hallwayGroup.add(hoseCabinetDoorPivot);
 const hoseCabinetDoor=new THREE.Mesh(new THREE.BoxGeometry(1.84,1.44,0.06),new THREE.MeshStandardMaterial({color:0xb91c1c,roughness:0.5,metalness:0.2}));
 hoseCabinetDoor.position.set(0.92,0,0);hoseCabinetDoor.castShadow=true;hoseCabinetDoorPivot.add(hoseCabinetDoor);
 // Inside the cabinet: coiled hose + hydrant outlet + valve wheel
 const hoseReel=new THREE.Mesh(new THREE.TorusGeometry(0.34,0.11,10,24),new THREE.MeshStandardMaterial({color:0xfbbf24,roughness:0.6}));
-hoseReel.position.set(3.55,1.25,11.72);hallwayGroup.add(hoseReel);
+hoseReel.position.set(3.55,1.25,11.78);hallwayGroup.add(hoseReel);
 const hydrantPipe=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.85,14),new THREE.MeshStandardMaterial({color:0xb45309,metalness:0.6,roughness:0.35}));
-hydrantPipe.position.set(4.55,1.05,11.7);hallwayGroup.add(hydrantPipe);
+hydrantPipe.position.set(4.55,1.05,11.78);hallwayGroup.add(hydrantPipe);
 const hydrantOutlet=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.22,14),new THREE.MeshStandardMaterial({color:0xf59e0b,metalness:0.7,roughness:0.3}));
-hydrantOutlet.rotation.x=Math.PI/2;hydrantOutlet.position.set(4.55,1.42,11.58);hallwayGroup.add(hydrantOutlet);
+hydrantOutlet.rotation.x=Math.PI/2;hydrantOutlet.position.set(4.55,1.42,11.66);hallwayGroup.add(hydrantOutlet);
 const valveWheel=new THREE.Mesh(new THREE.TorusGeometry(0.17,0.035,8,20),new THREE.MeshStandardMaterial({color:0xdc2626,metalness:0.4,roughness:0.4}));
-valveWheel.position.set(5.35,1.55,11.7);hallwayGroup.add(valveWheel);
+valveWheel.position.set(5.35,1.55,11.78);hallwayGroup.add(valveWheel);
+// The LĂNG (multi-purpose nozzle) hangs inside the cabinet, coupled to the hose
+// coil — visible the moment the door opens. lang-da-nang.glb replaces this
+// primitive when it loads; picking the nozzle up (valve opened) hides it here.
+const cabinetNozzle=new THREE.Group();cabinetNozzle.position.set(4.02,1.08,11.72);cabinetNozzle.rotation.z=0.5;hallwayGroup.add(cabinetNozzle);
+(function(){
+  const blue=new THREE.MeshStandardMaterial({color:0x1d4ed8,metalness:0.35,roughness:0.35});
+  const dark=new THREE.MeshStandardMaterial({color:0x111827,roughness:0.5});
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.045,0.34,12),blue);tube.castShadow=true;cabinetNozzle.add(tube);
+  const tip=new THREE.Mesh(new THREE.CylinderGeometry(0.062,0.03,0.14,12),dark);tip.position.y=0.23;tip.castShadow=true;cabinetNozzle.add(tip);
+  const grip=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.16,0.05),dark);grip.position.set(0.07,-0.1,0);grip.rotation.z=-0.5;cabinetNozzle.add(grip);
+})();
 const hallSign=hallBox(2.4,0.5,0.06,0x991b1b,4,2.45,11.82);
+interactables.push({x:1.9,z:11.3,id:'fire_cabinet',title:'Tủ chữa cháy',desc:'firecabinet'});
 interactables.push({x:4.0,z:11.0,id:'hose_cabinet',title:'Tủ họng nước vách tường — mở tủ',desc:'cabinet'});
 interactables.push({x:4.55,z:11.1,id:'hose_connect',title:'Họng nước chờ — kết nối vòi',desc:'connect'});
 interactables.push({x:5.35,z:11.1,id:'hose_valve',title:'Van nước — mở van',desc:'valve'});
@@ -854,8 +881,13 @@ function swapGLBFlame(root){ // ngon-lua-moi.glb -> the printer fire (the primit
 }
 function swapGLBHose(root){ // voi-chua-chay.glb -> coiled hose inside the hallway cabinet
   const c=root.clone(true);c.rotation.x=Math.PI/2;glbShadows(c); // flat coil -> standing reel facing the player
-  const w=glbWrap(c,false);w.position.set(3.55,1.25,11.7);hallwayGroup.add(w);
+  const w=glbWrap(c,false);w.position.set(3.55,1.25,11.78);hallwayGroup.add(w);
   hoseReel.visible=false;
+}
+function swapGLBCabinetNozzle(root){ // lang-da-nang.glb -> the nozzle hanging inside the cabinet
+  cabinetNozzle.children.forEach(function(c){c.visible=false;});
+  const c=root.clone(true);glbShadows(c);glbFitHeight(c,0.42);
+  const w=glbWrap(c,false);cabinetNozzle.add(w);
 }
 function glbFit(obj,target){ // scale a clone so its largest dimension == target (metres)
   const s=new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
@@ -902,11 +934,13 @@ function swapGLBBucket(root){ // xo-nuoc.glb -> the water bucket decoy
   bucket.visible=false;waterTop.visible=false;
   interactables.forEach(function(o){if(o.id==='bucket')o.obj3d=w;});
 }
-function placeGLBFireCabinet(root){ // tu-chua-chay.glb -> red extinguisher cabinet on the east wall, by the door station
-  const c=prepClone(root,1.7,1.7,1.7,-Math.PI/2); // glass front faces into the room
-  const w=glbWrap(c,true);w.position.set(9.7,0,3.0);scene.add(w);
-  addCollider(9.65,3.0,0.6,1.1);
-  addNameLabel('Tủ chữa cháy',9.3,1.62,3.0);
+function placeGLBFireCabinet(root){ // tu-chua-chay.glb -> red extinguisher cabinet in the HALLWAY only,
+  // against the hallway south wall just west of the hose cabinet (the office room has none)
+  const c=prepClone(root,1.7,1.7,1.7,Math.PI); // glass front faces into the hallway
+  const w=glbWrap(c,true);w.position.set(1.9,0,11.62);hallwayGroup.add(w);
+  addCollider(1.9,11.62,1.2,0.55);
+  addNameLabel('Tủ chữa cháy',1.9,1.78,11.32);
+  interactables.forEach(function(o){if(o.id==='fire_cabinet')o.obj3d=w;}); // green aim outline hugs the real model
 }
 function placeGLBWallHydrant(root){ // hong-nuoc.glb -> wall hydrant in the hallway, just east of the hose cabinet
   const c=prepClone(root,1.15,1.15,1.15,Math.PI); // outlet faces into the hallway
@@ -953,6 +987,7 @@ function loadGLBModels(){
   loadOneGLB(loader,'cua-thoat-hiem.glb',function(g){swapGLBDoor(g.scene);});
   loadOneGLB(loader,'lang-da-nang.glb',function(g){swapGLBNozzle(g.scene);});
   loadOneGLB(loader,'voi-chua-chay.glb',function(g){swapGLBHose(g.scene);});
+  loadOneGLB(loader,'lang-da-nang.glb',function(g){swapGLBCabinetNozzle(g.scene);});
   loadOneGLB(loader,'ngon-lua-moi.glb',function(g){swapGLBFlame(g.scene);});
   loadOneGLB(loader,'iphone.glb',function(g){swapGLBPhone(g.scene);});
   loadOneGLB(loader,'ban-do.glb',function(g){swapGLBMap(g.scene);});
@@ -1005,7 +1040,7 @@ function addNameLabel(text,x,y,z,parent){
 }
 // 3D anchors + aim heights for the outline box / crosshair test
 const OBJ3D_MAP={breaker:breakerPanel,poster:poster,phone:phoneMesh,map:mapMesh,bucket:bucket,exit:doorPivot,hall_door:doorPivot,hose_cabinet:hoseCabinetBody,hose_connect:hydrantOutlet,hose_valve:valveWheel};
-const AIM_Y={poster:1.7,breaker:1.5,exit:1.2,hall_door:1.2,hose_cabinet:1.25,bucket:0.5,phone:0.9,map:0.9,practice_ext:0.6};
+const AIM_Y={poster:1.7,breaker:1.5,exit:1.2,hall_door:1.2,hose_cabinet:1.25,fire_cabinet:1.1,bucket:0.5,phone:0.9,map:0.9,practice_ext:0.6};
 interactables.forEach(o=>{o.obj3d=o.group||OBJ3D_MAP[o.id]||null;o.aimY=AIM_Y[o.id]||0.95;});
 // Floating name tags above every interactable
 const cabinetInnerLabels=[];
@@ -1023,6 +1058,7 @@ const cabinetInnerLabels=[];
   addNameLabel('Tủ họng nước',4.0,2.42,11.62);
   cabinetInnerLabels.push(addNameLabel('Họng nước chờ',4.55,2.02,11.6));
   cabinetInnerLabels.push(addNameLabel('Van nước',5.35,2.12,11.68));
+  cabinetInnerLabels.push(addNameLabel('Lăng phun nước',4.02,1.62,11.66));
   if(byId.practice_ext) addNameLabel('Bình chữa cháy TẬP',0,1.22,0,byId.practice_ext.group);
   addNameLabel('Máy in',-7,2.6,-4.9);
   cabinetInnerLabels.forEach(s=>{s.visible=false;}); // parts inside the cabinet show once it opens
@@ -1150,14 +1186,18 @@ function handleInteract(obj){
     addScore(15);showToast('☎️ Đã gọi 114! Lực lượng PCCC đang đến. Bạn vẫn cần dập lửa nhỏ ngay.','#0f766e');beep(880,0.2);return;
   }
   if(obj.id==='map'){ toggleMapOverlay(); return; }
+  if(obj.id==='fire_cabinet'){
+    showToast('🧯 Tủ chữa cháy ở hành lang: bên trong có bình CO₂, bình bột ABC và cuộn vòi. Cháy điện dùng CO₂/bột — tuyệt đối không dùng nước!','#0f766e',3600);beep(620,0.12);return;
+  }
   if(obj.id==='hall_door'){ toggleExitDoor(); return; }
   if(obj.id==='hose_cabinet'){
     if(currentLevel!==1){showToast('Tủ họng nước chỉ dùng ở Level 1.','#ea580c');return;}
     if(hoseCabinetOpen){showToast('Tủ đã mở. Bên trong có cuộn vòi và họng chờ.','#0f766e');return;}
     hoseCabinetOpen=true;addScore(15); // the door swing itself is animated in the render loop
-    showToast('🚪 Đã mở tủ họng nước! Thấy cuộn vòi và họng chờ bên trong.','#0f766e',3200);beep(620,0.14);
+    const cabIt=interactables.find(o=>o.id==='hose_cabinet');if(cabIt)cabIt.title='Tủ họng nước (đã mở) — vòi & lăng ở bên trong';
+    showToast('🚪 Đã mở tủ họng nước! Cuộn vòi, lăng phun và họng chờ đều ở bên trong.','#0f766e',3400);beep(620,0.14);
     setTask('task-hall','done');setTask('task-connect','active');
-    updateObjective('Kết nối vòi vào họng nước','Tới họng chờ (ống vàng bên phải trong tủ) rồi nhấn E để lắp đầu nối vòi.');
+    updateObjective('Kết nối vòi vào họng nước','Trong tủ: cuộn vòi vàng, lăng phun treo cạnh vòi, họng chờ ống vàng bên phải. Tới họng chờ rồi nhấn E để lắp đầu nối vòi.');
     return;
   }
   if(obj.id==='hose_connect'){
@@ -1358,6 +1398,7 @@ function drawMinimap(){
   mm.strokeStyle='#78716c';mm.strokeRect(SX(-2),SZ(12),12*8.5,5*8.5);
   mm.fillStyle='#22c55e';mm.fillRect(SX(5.9),SZ(7)-2,1.2*8.5,4);
   mm.fillStyle='#dc2626';mm.fillRect(SX(3.1),SZ(11.9),1.8*8.5,4);
+  mm.fillStyle='#b91c1c';mm.fillRect(SX(1.35),SZ(11.9),1.1*8.5,4); // fire cabinet, west of the hose cabinet
   // desks
   mm.fillStyle='#92400e';[[-3,2.5],[0.5,2.5],[4,2.5],[-3,-0.8],[0.5,-0.8],[4,-0.8]].forEach(p=>{mm.fillRect(SX(p[0])-12,SZ(p[1])-6,24,12);});
   // fire
@@ -1368,7 +1409,7 @@ function drawMinimap(){
   mm.fillStyle='#f59e0b';mm.beginPath();mm.arc(SX(9.45),SZ(5.35),4,0,7);mm.fill();
   // player
   const px=SX(player.x),py=SZ(player.z);mm.fillStyle='#fff';mm.beginPath();mm.arc(px,py,5,0,7);mm.fill();mm.strokeStyle='#0ea5e9';mm.lineWidth=2;mm.stroke();
-  mm.fillStyle='#e5e7eb';mm.font='8px sans-serif';mm.fillText('Bạn',px+7,py+3);mm.fillText('Họng nước',SX(3.1),SZ(11.9)-3);mm.fillText('Cửa',SX(5.9),SZ(7)+11);
+  mm.fillStyle='#e5e7eb';mm.font='8px sans-serif';mm.fillText('Bạn',px+7,py+3);mm.fillText('Họng nước',SX(3.1),SZ(11.9)-3);mm.fillText('Tủ CC',SX(1.35),SZ(11.9)-3);mm.fillText('Cửa',SX(5.9),SZ(7)+11);
 }
 
 // ============ LEVEL 0 TUTORIAL ============
@@ -1443,6 +1484,7 @@ function startMainLevel(){
   exitDoorOpen=false;doorPivot.rotation.y=0;
   const exIt=interactables.find(o=>o.id==='exit');if(exIt)exIt.title='Cửa thoát hiểm — E mở cửa';
   hoseCabinetDoorPivot.rotation.y=0;valveWheel.rotation.z=0;
+  const cabReset=interactables.find(o=>o.id==='hose_cabinet');if(cabReset)cabReset.title='Tủ họng nước vách tường — mở tủ';
   hoseLineHall.visible=false;hoseLineOffice.visible=false;
   fireHealth=100;breakerOff=false;seenFire=false;quizDone=false;fireDialogShown=false;
   if(currentLevel===1){TASK_INFO=TASK_INFO_LV1;taskStates={};TASK_INFO.forEach(t=>taskStates[t[0]]='locked');}
@@ -1615,6 +1657,7 @@ function animate(){
     tooltipEl.textContent='🎯 '+aimTarget.title;tooltipEl.style.display='block';
   } else { hlHelper.visible=false;tooltipEl.style.display='none'; }
   cabinetInnerLabels.forEach(function(s){s.visible=hoseCabinetOpen;});
+  cabinetNozzle.visible=!hasHoseNozzle; // the nozzle leaves the cabinet once it is in your hand
   // Hose-cabinet door swings smoothly once toggled (was an instant snap before)
   hoseCabinetDoorPivot.rotation.y+=((hoseCabinetOpen?-1.85:0)-hoseCabinetDoorPivot.rotation.y)*Math.min(1,dt*6);
   // fire animation
