@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="color-scheme" content="light dark"/>
 <link rel="icon" href="data:,"/>
-<title>Game Giải Đố 3D — Cháy Văn Phòng</title>
+<title>Mô phỏng PCCC và CNCH 3D v1.261011-1</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -88,6 +88,7 @@ body.in-tutorial #minimapWrap{display:none}
 #crossDot{position:absolute;left:50%;top:50%;width:6px;height:6px;background:#dc2626;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%)}
 #prompt{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:22;background:#111827;color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px 14px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.4);display:none;max-width:92vw;text-align:center}
 #prompt kbd{background:#fff;color:#111;padding:2px 7px;border-radius:6px;font-family:monospace}
+#tooltip{position:fixed;left:50%;top:calc(50% - 72px);transform:translateX(-50%);z-index:16;background:rgba(17,24,39,.94);color:#fff;border:2px solid #22c55e;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.45);display:none;max-width:92vw;text-align:center;pointer-events:none;white-space:nowrap}
 #toast{position:fixed;left:50%;top:86px;transform:translateX(-50%);z-index:30;background:#dc2626;color:#fff;padding:10px 16px;border-radius:999px;font-weight:800;font-size:13px;box-shadow:0 10px 25px rgba(220,38,38,.4);display:none;max-width:92vw;text-align:center}
 
 /* Bottom controls help */
@@ -221,6 +222,7 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 
 <div id="crosshair"><div id="crossDot"></div></div>
 <div id="prompt"></div>
+<div id="tooltip"></div>
 <div id="toast"></div>
 
 <div id="helpBar"><span><b>W A S D</b> di chuyển</span><span><b>Chuột</b> kéo để nhìn (click = khóa chuột)</span><span><b>E</b> tương tác</span><span><b>F</b> xịt bình (giữ)</span><span><b>Shift</b> chạy</span></div>
@@ -238,7 +240,7 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 <!-- START -->
 <div class="overlay" id="startScreen">
   <div class="panel">
-    <span class="badge">🎮 Game giải đố 3D • Bước 1: Chọn phiên bản</span>
+    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-1</span>
     <h1>Đang làm việc bỗng <em>ngửi thấy mùi khét…</em> có khói!</h1>
     <p>Bạn đang làm việc thì ngửi thấy mùi khét lạ, khói bắt đầu lan trong văn phòng. Hãy đi điều tra xem khói từ đâu, suy luận loại cháy và xử lý an toàn. Nếu lửa lớn hoặc khói dày, ưu tiên thoát ra ngoài và gọi 114 — chỉ dập khi lửa còn nhỏ và luôn có lối thoát sau lưng.</p>
     <div class="grid2">
@@ -326,6 +328,7 @@ let smokeMilestone=0, smokeWarn240=false; // smoke timeline markers (from 5s, +1
 let startTime=null, elapsed=0;
 let player={x:2.25,z:5.55,speed:3.4};
 let interactTarget=null;
+let aimTarget=null; // interactable currently under the crosshair (drives outline + tooltip)
 let playMode=null; // 'pc' | 'mobile' — chosen on the start screen
 let currentLevel=0; // 0 = demo văn phòng, 1 = họng nước hành lang
 let playerArea='office'; // 'office' | 'hallway'
@@ -458,7 +461,7 @@ const myDeskText=box(2.4,0.08,1.2,0x0f766e,0,0.78,5.0);addCollider(0,5.0,2.5,1.3
 
 // Printer corner - FIRE SOURCE
 box(1.1,0.9,0.9,0xe5e7eb,-7,0.45,-4.9);
-box(0.9,0.25,0.7,0x111827,-7,1.02,-4.9);
+const printerBody=box(0.9,0.25,0.7,0x111827,-7,1.02,-4.9);
 box(1.3,0.75,0.45,0xd1d5db,-8.2,0.37,-4.9); // paper stack
 addCollider(-7,-4.9,1.4,1.1);
 
@@ -564,9 +567,40 @@ function makeExtinguisher(x,z,type){
   addCollider(x,z,0.5,0.5);
   return g;
 }
-makeExtinguisher(6.2,-4.2,'CO2');
-makeExtinguisher(7.4,-4.2,'POWDER');
-makeExtinguisher(5.0,-4.2,'WATER');
+// Extinguisher station moved next to the room's exit door (south-east corner),
+// with the "Tiêu lệnh chữa cháy" board mounted on the wall right above them
+makeExtinguisher(9.45,6.05,'CO2');
+makeExtinguisher(9.45,5.35,'POWDER');
+makeExtinguisher(9.45,4.65,'WATER');
+(function(){
+  const cv=document.createElement('canvas');cv.width=1024;cv.height=682;
+  const c=cv.getContext('2d');
+  c.fillStyle='#ffffff';c.fillRect(0,0,1024,682);
+  c.strokeStyle='#b91c1c';c.lineWidth=14;c.strokeRect(10,10,1004,662);
+  c.fillStyle='#b91c1c';c.fillRect(10,10,1004,118);
+  c.fillStyle='#ffffff';c.font='900 62px "Be Vietnam Pro",system-ui,sans-serif';c.textAlign='center';c.textBaseline='middle';
+  c.fillText('TIÊU LỆNH CHỮA CHÁY',512,72);
+  const steps=[
+    'Khi có cháy: báo động cho mọi người biết',
+    'Cắt điện khu vực xảy ra cháy',
+    'Dùng bình chữa cháy tại chỗ để dập lửa',
+    'Gọi 114, thoát nạn theo lối thoát hiểm'
+  ];
+  steps.forEach(function(s,i){
+    const y=205+i*112;
+    c.fillStyle='#dc2626';c.beginPath();c.arc(84,y,38,0,Math.PI*2);c.fill();
+    c.fillStyle='#ffffff';c.font='900 52px "Be Vietnam Pro",system-ui,sans-serif';c.textAlign='center';
+    c.fillText(String(i+1),84,y+3);
+    c.fillStyle='#1c1917';c.font='700 41px "Be Vietnam Pro",system-ui,sans-serif';c.textAlign='left';
+    c.fillText(s,150,y+2);
+  });
+  c.fillStyle='#991b1b';c.font='800 34px "Be Vietnam Pro",system-ui,sans-serif';c.textAlign='center';
+  c.fillText('Bình chữa cháy đặt ngay phía dưới — nhớ vị trí này!',512,640);
+  const tex=new THREE.CanvasTexture(cv);tex.anisotropy=4;
+  box(0.06,1.32,1.95,0x991b1b,9.88,2.02,5.35); // red backing board on the east wall
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(1.85,1.23),new THREE.MeshStandardMaterial({map:tex,roughness:0.6}));
+  board.position.set(9.83,2.02,5.35);board.rotation.y=-Math.PI/2;scene.add(board);
+})();
 
 // Water bucket decoy
 const bucket=cyl(0.28,0.22,0.42,0x2563eb,-1.8,0.21,-3.2);
@@ -574,7 +608,7 @@ const waterTop=cyl(0.26,0.26,0.02,0x60a5fa,-1.8,0.43,-3.2);
 interactables.push({x:-1.8,z:-3.2,id:'bucket',title:'Xô nước',desc:'bucket'});addCollider(-1.8,-3.2,0.6,0.6);
 
 // Breaker panel east wall
-box(0.12,0.9,0.7,0x374151,9.82,1.5,1.8);
+const breakerPanel=box(0.12,0.9,0.7,0x374151,9.82,1.5,1.8);
 const lever=box(0.08,0.28,0.08,0xf59e0b,9.74,1.55,1.8);
 interactables.push({x:9.2,z:1.8,mesh:lever,id:'breaker',title:'Tủ cầu dao điện',desc:'breaker'});addCollider(9.5,1.8,0.6,0.8);
 
@@ -582,8 +616,8 @@ interactables.push({x:9.2,z:1.8,mesh:lever,id:'breaker',title:'Tủ cầu dao đ
 const poster=box(1.6,1.1,0.05,0xfff7ed,-1.5,1.7,-6.82);poster.material.emissive=new THREE.Color(0xffffff);poster.material.emissiveIntensity=0.08;
 interactables.push({x:-1.5,z:-6.2,id:'poster',title:'Bảng hướng dẫn PCCC',desc:'poster'});
 
-// Phone on desk
-box(0.28,0.06,0.2,0x111827,1.2,0.85,5.0);
+// Phone on desk (primitive stays as the fallback; iphone.glb replaces it when it loads)
+const phoneMesh=box(0.28,0.06,0.2,0x111827,1.2,0.85,5.0);
 interactables.push({x:1.2,z:5.0,id:'phone',title:'Điện thoại bàn — gọi 114',desc:'phone'});
 
 // Exit door south: a real hinged door in the doorway gap — press E to open/close, then WALK through
@@ -620,7 +654,7 @@ hydrantOutlet.rotation.x=Math.PI/2;hydrantOutlet.position.set(4.55,1.42,11.58);h
 const valveWheel=new THREE.Mesh(new THREE.TorusGeometry(0.17,0.035,8,20),new THREE.MeshStandardMaterial({color:0xdc2626,metalness:0.4,roughness:0.4}));
 valveWheel.position.set(5.35,1.55,11.7);hallwayGroup.add(valveWheel);
 const hallSign=hallBox(2.4,0.5,0.06,0x991b1b,4,2.45,11.82);
-interactables.push({x:3.2,z:11.05,id:'hose_cabinet',title:'Tủ họng nước vách tường — mở tủ',desc:'cabinet'});
+interactables.push({x:4.0,z:11.0,id:'hose_cabinet',title:'Tủ họng nước vách tường — mở tủ',desc:'cabinet'});
 interactables.push({x:4.55,z:11.1,id:'hose_connect',title:'Họng nước chờ — kết nối vòi',desc:'connect'});
 interactables.push({x:5.35,z:11.1,id:'hose_valve',title:'Van nước — mở van',desc:'valve'});
 interactables.push({x:8.5,z:7.8,id:'hall_door',title:'Cửa văn phòng — E mở/đóng cửa',desc:'halldoor'});
@@ -729,7 +763,7 @@ function swapGLBDoor(root){ // cua-thoat-hiem.glb -> exit door (frame stays fixe
   scene.add(frameG);doorPivot.add(panelWrap);
   doorPanel.visible=false;doorHandle.visible=false;exitSign.visible=false;
 }
-function swapGLBNozzle(root){ // lang-chua-chay.glb -> first-person hose nozzle in hand
+function swapGLBNozzle(root){ // lang-da-nang.glb -> first-person hose nozzle in hand
   heldNozzle.children.forEach(function(c){c.visible=false;});
   const c=prepClone(root,0,0,0,Math.PI); // model tip points +Z; turn it to camera-forward (-Z)
   heldNozzle.add(glbWrap(c,false));
@@ -750,6 +784,51 @@ function swapGLBHose(root){ // voi-chua-chay.glb -> coiled hose inside the hallw
   const c=root.clone(true);c.rotation.x=Math.PI/2;glbShadows(c); // flat coil -> standing reel facing the player
   const w=glbWrap(c,false);w.position.set(3.55,1.25,11.7);hallwayGroup.add(w);
   hoseReel.visible=false;
+}
+function glbFit(obj,target){ // scale a clone so its largest dimension == target (metres)
+  const s=new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+  const m=Math.max(s.x,s.y,s.z)||1;obj.scale.multiplyScalar(target/m);
+}
+function swapGLBPhone(root){ // iphone.glb -> replaces the old desk phone on the player's desk
+  const c=root.clone(true);glbFit(c,0.2);glbShadows(c);
+  const w=glbWrap(c,true);w.position.set(1.2,0.82,5.0);scene.add(w);
+  phoneMesh.visible=false;
+}
+function swapGLBMap(root){ // ban-do.glb -> escape map lying on the player's (main) desk
+  const c=root.clone(true);glbFit(c,0.62);glbShadows(c);
+  const w=glbWrap(c,true);w.position.set(-0.45,0.82,5.05);w.rotation.y=0.35;scene.add(w);
+}
+function glbFitHeight(obj,h){ // scale a clone uniformly so its bounding-box height == h (metres)
+  const s=new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+  if(s.y>0) obj.scale.multiplyScalar(h/s.y);
+}
+function swapGLBPrinter(root){ // may-in.glb -> the printer on its stand (the fire source corner)
+  const c=root.clone(true);glbShadows(c);glbFitHeight(c,0.34);
+  const w=glbWrap(c,true);w.position.set(-7,0.9,-4.9);scene.add(w);
+  printerBody.visible=false;
+}
+function swapGLBElecCabinet(root){ // tu-dien.glb -> electrical cabinet on the east wall (the lever stays live)
+  const c=prepClone(root,1.3,1.3,1.3,-Math.PI/2); // front faces into the room
+  const w=glbWrap(c,false);w.position.set(9.84,1.5,1.8);scene.add(w);
+  breakerPanel.visible=false;
+  interactables.forEach(function(o){if(o.id==='breaker')o.obj3d=w;});
+}
+function swapGLBBucket(root){ // xo-nuoc.glb -> the water bucket decoy
+  const c=root.clone(true);glbShadows(c);glbFitHeight(c,0.6);
+  const w=glbWrap(c,true);w.position.set(-1.8,0,-3.2);scene.add(w);
+  bucket.visible=false;waterTop.visible=false;
+  interactables.forEach(function(o){if(o.id==='bucket')o.obj3d=w;});
+}
+function placeGLBFireCabinet(root){ // tu-chua-chay.glb -> red extinguisher cabinet on the east wall, by the door station
+  const c=prepClone(root,1.7,1.7,1.7,-Math.PI/2); // glass front faces into the room
+  const w=glbWrap(c,true);w.position.set(9.7,0,3.0);scene.add(w);
+  addCollider(9.65,3.0,0.6,1.1);
+  addNameLabel('Tủ chữa cháy',9.3,1.62,3.0);
+}
+function placeGLBWallHydrant(root){ // hong-nuoc.glb -> wall hydrant in the hallway, just east of the hose cabinet
+  const c=prepClone(root,1.15,1.15,1.15,Math.PI); // outlet faces into the hallway
+  const w=glbWrap(c,true);w.position.set(6.4,0.95,11.66);hallwayGroup.add(w);
+  addNameLabel('Họng nước chữa cháy',6.4,1.85,11.55);
 }
 function glbIsBinary(buf){
   if(!buf||buf.byteLength<4) return false;
@@ -789,9 +868,16 @@ function loadGLBModels(){
   loadOneGLB(loader,'imac-de-ban.glb',function(g){swapGLBImac(g.scene);});
   loadOneGLB(loader,'ghe-gaming.glb',function(g){swapGLBChairs(g.scene);});
   loadOneGLB(loader,'cua-thoat-hiem.glb',function(g){swapGLBDoor(g.scene);});
-  loadOneGLB(loader,'lang-chua-chay.glb',function(g){swapGLBNozzle(g.scene);});
+  loadOneGLB(loader,'lang-da-nang.glb',function(g){swapGLBNozzle(g.scene);});
   loadOneGLB(loader,'voi-chua-chay.glb',function(g){swapGLBHose(g.scene);});
   loadOneGLB(loader,'ngon-lua-moi.glb',function(g){swapGLBFlame(g.scene);});
+  loadOneGLB(loader,'iphone.glb',function(g){swapGLBPhone(g.scene);});
+  loadOneGLB(loader,'ban-do.glb',function(g){swapGLBMap(g.scene);});
+  loadOneGLB(loader,'may-in.glb',function(g){swapGLBPrinter(g.scene);});
+  loadOneGLB(loader,'tu-dien.glb',function(g){swapGLBElecCabinet(g.scene);});
+  loadOneGLB(loader,'xo-nuoc.glb',function(g){swapGLBBucket(g.scene);});
+  loadOneGLB(loader,'tu-chua-chay.glb',function(g){placeGLBFireCabinet(g.scene);});
+  loadOneGLB(loader,'hong-nuoc.glb',function(g){placeGLBWallHydrant(g.scene);});
 }
 if(window.THREE&&THREE.GLTFLoader){loadGLBModels();}
 else{ // CDN fallback for the loader script itself
@@ -805,6 +891,83 @@ else{ // CDN fallback for the loader script itself
 cyl(0.22,0.28,0.4,0x92400e,8.8,0.2,-5.8);cyl(0.35,0.12,0.7,0x16a34a,8.8,0.75,-5.8);
 box(1.8,1.1,0.5,0x6b7280,8.9,0.55,3.8);addCollider(8.9,3.8,1.9,0.7);
 box(0.9,1.6,0.4,0x9ca3af,-9.3,0.8,2.5);addCollider(-9.3,2.5,1,0.6);
+
+// ============ NAME LABELS + AIM HIGHLIGHT ============
+// Every interactable gets a floating name tag above it, and whatever the
+// crosshair points at (in range) gets a green outline + a name tooltip.
+function makeNameLabel(text){
+  const fs=46,pad=22;
+  const meas=document.createElement('canvas').getContext('2d');
+  meas.font='800 '+fs+'px "Be Vietnam Pro",system-ui,sans-serif';
+  const tw=meas.measureText(text).width;
+  const cv=document.createElement('canvas');cv.width=Math.ceil(tw+pad*2);cv.height=68;
+  const c=cv.getContext('2d');
+  const r=30;
+  c.fillStyle='rgba(15,23,42,0.86)';
+  c.beginPath();
+  c.moveTo(r,2);c.lineTo(cv.width-r,2);c.quadraticCurveTo(cv.width-2,2,cv.width-2,r);
+  c.lineTo(cv.width-2,cv.height-r);c.quadraticCurveTo(cv.width-2,cv.height-2,cv.width-r,cv.height-2);
+  c.lineTo(r,cv.height-2);c.quadraticCurveTo(2,cv.height-2,2,cv.height-r);
+  c.lineTo(2,r);c.quadraticCurveTo(2,2,r,2);c.fill();
+  c.font='800 '+fs+'px "Be Vietnam Pro",system-ui,sans-serif';
+  c.fillStyle='#ffffff';c.textAlign='center';c.textBaseline='middle';
+  c.fillText(text,cv.width/2,cv.height/2+3);
+  const tex=new THREE.CanvasTexture(cv);tex.minFilter=THREE.LinearFilter;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+  const h=0.25;sp.scale.set(h*cv.width/cv.height,h,1);
+  return sp;
+}
+function addNameLabel(text,x,y,z,parent){
+  const sp=makeNameLabel(text);sp.position.set(x,y,z);(parent||scene).add(sp);return sp;
+}
+// 3D anchors + aim heights for the outline box / crosshair test
+const OBJ3D_MAP={breaker:breakerPanel,poster:poster,phone:phoneMesh,bucket:bucket,exit:doorPivot,hall_door:doorPivot,hose_cabinet:hoseCabinetBody,hose_connect:hydrantOutlet,hose_valve:valveWheel};
+const AIM_Y={poster:1.7,breaker:1.5,exit:1.2,hall_door:1.2,hose_cabinet:1.25,bucket:0.5,phone:0.9,practice_ext:0.6};
+interactables.forEach(o=>{o.obj3d=o.group||OBJ3D_MAP[o.id]||null;o.aimY=AIM_Y[o.id]||0.95;});
+// Floating name tags above every interactable
+const cabinetInnerLabels=[];
+(function(){
+  const byId={};interactables.forEach(o=>{byId[o.id]=o;});
+  if(byId.ext_CO2) addNameLabel('Bình CO₂',0,1.34,0,byId.ext_CO2.group);
+  if(byId.ext_POWDER) addNameLabel('Bình bột ABC',0,1.34,0,byId.ext_POWDER.group);
+  if(byId.ext_WATER) addNameLabel('Bình nước',0,1.34,0,byId.ext_WATER.group);
+  addNameLabel('Xô nước',-1.8,0.85,-3.2);
+  addNameLabel('Tủ cầu dao điện',9.45,2.3,1.8);
+  addNameLabel('Bảng PCCC',-1.5,2.55,-6.55);
+  addNameLabel('Điện thoại — gọi 114',1.2,1.24,5.0);
+  addNameLabel('Cửa thoát hiểm',8.5,2.74,6.86);
+  addNameLabel('Tủ họng nước',4.0,2.42,11.62);
+  cabinetInnerLabels.push(addNameLabel('Họng nước chờ',4.55,2.02,11.6));
+  cabinetInnerLabels.push(addNameLabel('Van nước',5.35,2.12,11.68));
+  if(byId.practice_ext) addNameLabel('Bình chữa cháy TẬP',0,1.22,0,byId.practice_ext.group);
+  addNameLabel('Máy in',-7,2.6,-4.9);
+  cabinetInnerLabels.forEach(s=>{s.visible=false;}); // parts inside the cabinet show once it opens
+})();
+// Green outline box + tooltip for whatever the crosshair is pointing at
+const hlBox3=new THREE.Box3(new THREE.Vector3(-0.1,-0.1,-0.1),new THREE.Vector3(0.1,0.1,0.1));
+const hlHelper=new THREE.Box3Helper(hlBox3,0x22c55e);hlHelper.visible=false;scene.add(hlHelper);
+const tooltipEl=document.getElementById('tooltip');
+function getAimTarget(){
+  const cp=Math.cos(pitch);
+  const fx=-Math.sin(yaw)*cp, fy=Math.sin(pitch), fz=-Math.cos(yaw)*cp;
+  let best=null,bestDot=0.90; // ~26° cone around the crosshair, up to 4.6m away
+  for(const o of interactables){
+    if(o.group&&o.group.visible===false) continue;
+    if(tutorial){ if(o.id!=='practice_ext') continue; }
+    else{
+      if(o.id==='practice_ext') continue;
+      if(o.id==='hose_cabinet'&&currentLevel!==1) continue;
+      if(o.id==='hose_connect'&&!(currentLevel===1&&hoseCabinetOpen)) continue;
+      if(o.id==='hose_valve'&&!(currentLevel===1&&hoseConnected)) continue;
+    }
+    const dx=o.x-camera.position.x, dy=(o.aimY||1.0)-camera.position.y, dz=o.z-camera.position.z;
+    const d=Math.sqrt(dx*dx+dy*dy+dz*dz);
+    if(d>4.6||d<0.01) continue;
+    const dot=(dx*fx+dy*fy+dz*fz)/d;
+    if(dot>bestDot){bestDot=dot;best=o;}
+  }
+  return best;
+}
 
 // ============ UI HELPERS ============
 const objectiveText=document.getElementById('objectiveText');
@@ -897,7 +1060,7 @@ function handleInteract(obj){
   if(obj.id==='hose_cabinet'){
     if(currentLevel!==1){showToast('Tủ họng nước chỉ dùng ở Level 1.','#ea580c');return;}
     if(hoseCabinetOpen){showToast('Tủ đã mở. Bên trong có cuộn vòi và họng chờ.','#0f766e');return;}
-    hoseCabinetOpen=true;hoseCabinetDoorPivot.rotation.y=-1.85;addScore(15);
+    hoseCabinetOpen=true;addScore(15); // the door swing itself is animated in the render loop
     showToast('🚪 Đã mở tủ họng nước! Thấy cuộn vòi và họng chờ bên trong.','#0f766e',3200);beep(620,0.14);
     setTask('task-hall','done');setTask('task-connect','active');
     updateObjective('Kết nối vòi vào họng nước','Tới họng chờ (ống vàng bên phải trong tủ) rồi nhấn E để lắp đầu nối vòi.');
@@ -928,7 +1091,7 @@ function handleInteract(obj){
   if(obj.id==='bucket'){
     dialog('🪣 Bạn định dùng xô nước?','Đây là cháy điện từ máy in. Đổ nước vào sẽ gây chập điện, điện giật và làm lửa lan theo nước. Bạn có chắc?',[
       {label:'💧 Vẫn đổ nước (nguy hiểm)',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');fireHealth=Math.min(130,fireHealth+25);smokeLevel+=18;showToast('⚡ CHẬP ĐIỆN! Lửa bùng to hơn! Đừng dùng nước cho cháy điện!');beep(110,0.4,'sawtooth',0.15);updateFireUI();}},
-      {label:'✅ Không dùng nước — tìm bình CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');addScore(20);showToast('Đúng! Cháy điện không dùng nước. Tìm bình CO₂ đỏ.','#0f766e');quizDone=true;setTask('task-quiz','done');setTask('task-breaker','active');setTask('task-ext','active');updateObjective('Ngắt điện & lấy bình CO₂','Tủ điện ở tường Đông (x=9). Bình CO₂ đỏ ở góc Đông-Bắc.');}}
+      {label:'✅ Không dùng nước — tìm bình CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');addScore(20);showToast('Đúng! Cháy điện không dùng nước. Tìm bình CO₂ đỏ.','#0f766e');quizDone=true;setTask('task-quiz','done');setTask('task-breaker','active');setTask('task-ext','active');updateObjective('Ngắt điện & lấy bình CO₂','Tủ điện ở tường Đông (x=9). Bình CO₂ đỏ cạnh cửa thoát hiểm (góc Đông-Nam).');}}
     ]);return;
   }
   if(obj.id==='breaker'){
@@ -938,7 +1101,7 @@ function handleInteract(obj){
     showToast('⚡ Đã ngắt cầu dao! Giờ an toàn để dập lửa.','#0f766e');beep(520,0.15);
     setTask('task-breaker','done');
     if(hasExtinguisher==='CO2'||hasExtinguisher==='POWDER') setTask(currentLevel===1?'task-spray90':'task-spray','active');
-    updateObjective((hasExtinguisher==='CO2'||hasExtinguisher==='POWDER')?'Đến gần máy in & giữ F để xịt':'Lấy bình CO₂ / bình bột ở góc phòng','Hai bình đỏ ở gần tường Bắc phía Đông: CO₂ loa đen, bột có đồng hồ áp. Tránh bình nước bạc.');
+    updateObjective((hasExtinguisher==='CO2'||hasExtinguisher==='POWDER')?'Đến gần máy in & giữ F để xịt':'Lấy bình CO₂ / bình bột cạnh cửa thoát hiểm','Các bình chữa cháy ở góc Đông-Nam cạnh cửa thoát hiểm, dưới biển Tiêu lệnh: CO₂ loa đen, bột có đồng hồ áp. Tránh bình nước bạc.');
     return;
   }
   if(obj.id.startsWith('ext_')){
@@ -983,7 +1146,7 @@ function checkFireProximity(){
       setTimeout(()=>{
         dialog('🔥 Máy in bốc cháy — cháy điện!','Khói đen, tia lửa điện và mùi khét nồng nặc. Máy in đang cháy do chập điện. Bạn sẽ làm gì đầu tiên?',[
           {label:'💧 Đổ nước vào máy in cho tắt',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');fireHealth=118;smokeLevel+=15;showToast('⚡ SAI! Nước + điện = giật & chập. Lửa to hơn! Hãy đọc bảng PCCC.');updateFireUI();beep(120,0.4,'sawtooth',0.16);}},
-          {label:'⚡ Ngắt cầu dao, rồi dùng bình CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');quizDone=true;addScore(30);setTask('task-quiz','done');setTask('task-breaker','active');setTask('task-ext','active');showToast('✅ ĐÚNG QUY TRÌNH! Ngắt điện → CO₂.','#0f766e');updateObjective('Ngắt cầu dao & lấy bình CO₂','Tủ điện tường Đông • Bình CO₂ đỏ góc Đông-Bắc');}},
+          {label:'⚡ Ngắt cầu dao, rồi dùng bình CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');quizDone=true;addScore(30);setTask('task-quiz','done');setTask('task-breaker','active');setTask('task-ext','active');showToast('✅ ĐÚNG QUY TRÌNH! Ngắt điện → CO₂.','#0f766e');updateObjective('Ngắt cầu dao & lấy bình CO₂','Tủ điện tường Đông • Bình CO₂ đỏ cạnh cửa thoát hiểm (góc Đông-Nam)');}},
           {label:'💨 Quạt mạnh cho khói tan',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');fireHealth+=10;showToast('Sai! Quạt cấp oxy làm lửa bùng mạnh hơn!');updateFireUI();}}
         ],'🚨 Quyết định nhanh');
       },400);
@@ -1081,6 +1244,10 @@ function getNearest(){
   for(const o of interactables){
     if(o.group&&o.group.visible===false) continue;
     if(tutorial&&o.id!=='practice_ext') continue; // Level 0: only the practice item is active
+    // Cabinet internals only become targets once they are actually reachable —
+    // before that they shadowed the cabinet itself and made it impossible to open
+    if(o.id==='hose_connect'&&!hoseCabinetOpen) continue;
+    if(o.id==='hose_valve'&&!hoseConnected) continue;
     const d=Math.hypot(player.x-o.x,player.z-o.z);
     if(d<bestDist){bestDist=d;best=o;}
   }
@@ -1103,8 +1270,8 @@ function drawMinimap(){
   const fp={x:SX(-7),y:SZ(-4.9)};mm.fillStyle=fireHealth>0?'#ef4444':'#22c55e';mm.beginPath();mm.arc(fp.x,fp.y,7,0,7);mm.fill();mm.fillStyle='#fff';mm.font='9px sans-serif';mm.fillText('🔥',fp.x-6,fp.y+3);
   // breaker & extinguishers
   mm.fillStyle='#f59e0b';mm.fillRect(SX(9)-4,SZ(1.8)-4,8,8);
-  mm.fillStyle='#dc2626';mm.beginPath();mm.arc(SX(6.2),SZ(-4.2),5,0,7);mm.fill();
-  mm.fillStyle='#f59e0b';mm.beginPath();mm.arc(SX(7.4),SZ(-4.2),4,0,7);mm.fill();
+  mm.fillStyle='#dc2626';mm.beginPath();mm.arc(SX(9.45),SZ(6.05),5,0,7);mm.fill();
+  mm.fillStyle='#f59e0b';mm.beginPath();mm.arc(SX(9.45),SZ(5.35),4,0,7);mm.fill();
   // player
   const px=SX(player.x),py=SZ(player.z);mm.fillStyle='#fff';mm.beginPath();mm.arc(px,py,5,0,7);mm.fill();mm.strokeStyle='#0ea5e9';mm.lineWidth=2;mm.stroke();
   mm.fillStyle='#e5e7eb';mm.font='8px sans-serif';mm.fillText('Bạn',px+7,py+3);mm.fillText('Họng nước',SX(3.1),SZ(11.9)-3);mm.fillText('Cửa',SX(7.9),SZ(7)+11);
@@ -1143,7 +1310,7 @@ function tutorialUpdate(dt){
   document.getElementById('smokeBar').style.width='0%';
   const moved=Math.hypot(player.x-lastPX,player.z-lastPZ);lastPX=player.x;lastPZ=player.z;
   const lookDelta=Math.abs(yaw-lastLookYaw)+Math.abs(pitch-lastLookPitch);lastLookYaw=yaw;lastLookPitch=pitch;
-  interactTarget=getNearest();
+  interactTarget=aimTarget||getNearest();
   let sprayingNow=false;
   if(tutStep===0){
     tutMoveDist+=moved;
@@ -1242,13 +1409,14 @@ function animate(){
     if(!hitsCollider(player.x,nz)) player.z=nz;
     camera.position.set(player.x,1.65+Math.sin(t*2.2)*0.015,player.z);
     camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
+    aimTarget=getAimTarget();
    if(tutorial){ sprayActive=tutorialUpdate(dt); }
    else{
     // LV0: walking out through the open exit door = escaped to safety
     if(currentLevel===0&&exitDoorOpen&&player.z>7.9&&!gameOver){escapeGame();}
     checkFireProximity();
     // interact prompt
-    interactTarget=getNearest();
+    interactTarget=aimTarget||getNearest();
     if(interactTarget){promptEl.style.display='block';promptEl.innerHTML=`<kbd>E</kbd> ${interactTarget.title} — nhấn E / nút đỏ`; }
     else if(Math.hypot(player.x+7,player.z+4.9)<2.8&&(hasExtinguisher||hasHoseNozzle)){promptEl.style.display='block';promptEl.innerHTML=!breakerOff?'⚠️ Chưa ngắt điện! Xịt bây giờ sẽ nguy hiểm':hasHoseNozzle?'🚿 Giữ <kbd>F</kbd> hoặc nút XỊT để phun nước dập lửa!':((hasExtinguisher==='CO2'||hasExtinguisher==='POWDER')?'🔥 Giữ <kbd>F</kbd> hoặc nút XỊT để dập lửa!':'⚠️ Bình này không phù hợp!');}
     else promptEl.style.display='none';
@@ -1346,6 +1514,15 @@ function animate(){
     elapsed=(Date.now()-startTime)/1000;
    }
   }
+  // Aim feedback: green outline + name tooltip on the object under the crosshair
+  if(aimTarget&&aimTarget.obj3d&&gameStarted&&!gameOver){
+    hlBox3.setFromObject(aimTarget.obj3d);hlBox3.expandByScalar(0.05);
+    hlHelper.visible=true;
+    tooltipEl.textContent='🎯 '+aimTarget.title;tooltipEl.style.display='block';
+  } else { hlHelper.visible=false;tooltipEl.style.display='none'; }
+  cabinetInnerLabels.forEach(function(s){s.visible=hoseCabinetOpen;});
+  // Hose-cabinet door swings smoothly once toggled (was an instant snap before)
+  hoseCabinetDoorPivot.rotation.y+=((hoseCabinetOpen?-1.85:0)-hoseCabinetDoorPivot.rotation.y)*Math.min(1,dt*6);
   // fire animation
   const fh=Math.max(0.12,fireHealth/100);
   fireGroup.scale.set(fh, fh*(0.9+Math.sin(t*9)*0.12), fh);
