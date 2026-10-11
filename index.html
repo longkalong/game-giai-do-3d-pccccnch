@@ -49,6 +49,17 @@ canvas#three{width:100%;height:100%;display:block;touch-action:none}
 .dot{width:20px;height:20px;border-radius:50%;border:2px solid #d6d3d1;display:grid;place-items:center;font-size:12px;flex:0 0 auto;background:#fff;color:#000}
 .task.done .dot{background:#16a34a;color:#fff;border-color:#16a34a}
 
+/* Level 0 tutorial card */
+#tutorialCard{position:fixed;left:12px;top:112px;z-index:19;width:248px;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 12px 30px rgba(0,0,0,.18);display:none}
+@media(prefers-color-scheme:dark){#tutorialCard{background:rgba(28,25,23,.96)}}
+#tutorialCard h3{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+#tutorialCard .tutProg{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+#tutorialCard .task.done .tutProg{color:#16a34a}
+body.in-tutorial #tutorialCard{display:block}
+body.in-tutorial #checklist{display:none}
+body.in-tutorial #minimapWrap{display:none}
+@media (pointer:coarse){#tutorialCard{width:206px;top:104px}}
+
 /* Crosshair & prompt */
 #crosshair{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;width:22px;height:22px;pointer-events:none}
 #crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.8);border-radius:999px}
@@ -89,6 +100,27 @@ canvas#three{width:100%;height:100%;display:block;touch-action:none}
 body.touch #joystick,body.touch #btnInteract,body.touch #btnSpray{display:block}
 body.touch #helpBar{display:none}
 body.touch #minimapWrap{display:none}
+/* Version mode overrides — user choice wins over auto-detection */
+body.mode-pc #joystick,body.mode-pc #btnInteract,body.mode-pc #btnSpray{display:none!important}
+body.mode-pc #helpBar{display:flex!important}
+body.mode-pc #minimapWrap{display:block}
+body.mode-mobile #joystick,body.mode-mobile #btnInteract,body.mode-mobile #btnSpray{display:block!important}
+body.mode-mobile #helpBar{display:none!important}
+body.mode-mobile #minimapWrap{display:none!important}
+body.mode-mobile #checklist{width:200px}
+.versionGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 6px}
+@media(max-width:560px){.versionGrid{grid-template-columns:1fr}}
+.versionBtn{appearance:none;border:2px solid var(--line);background:var(--card);border-radius:18px;padding:16px 14px;cursor:pointer;text-align:left;display:flex;gap:12px;align-items:flex-start;transition:.15s}
+.versionBtn:hover{border-color:var(--red);transform:translateY(-1px)}
+.versionBtn:active{transform:scale(.98)}
+.versionBtn .vIcon{font-size:28px;line-height:1}
+.versionBtn b{font-size:15px;display:block;color:var(--ink)}
+.versionBtn p{margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--muted)}
+.versionBtn.primary{border-color:var(--red);background:#fef2f2}
+@media(prefers-color-scheme:dark){.versionBtn.primary{background:#450a0a}}
+#modeBadge{position:fixed;left:12px;bottom:52px;z-index:19;background:rgba(17,24,39,.88);color:#fff;border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;display:none;backdrop-filter:blur(8px)}
+body.mode-pc #modeBadge,body.mode-mobile #modeBadge{display:block}
+body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 
 /* Small screens — phone layout */
 @media (max-width:640px){
@@ -97,6 +129,7 @@ body.touch #minimapWrap{display:none}
   #statsCard{flex:1 1 100%;justify-content:space-between}
   .stat{min-width:48px}
   #checklist{width:188px;padding:9px;top:auto;bottom:198px}
+  #tutorialCard{width:188px;padding:9px;top:auto;bottom:198px}
   #checklist .task{font-size:12px;padding:5px 6px}
   #prompt{bottom:196px;font-size:12px}
   #objectiveText{font-size:14px}
@@ -160,6 +193,15 @@ body.touch #minimapWrap{display:none}
   <div style="margin-top:10px"><label style="font-size:11px;font-weight:800;letter-spacing:.06em">LỬA <span id="firePct">100%</span></label><div id="fireMeter"><div id="fireFill"></div></div></div>
 </div>
 
+<div id="tutorialCard">
+  <h3>🏫 Level 0 — Tập trong văn phòng</h3>
+  <div class="task active" id="tut-task-0"><div class="dot">1</div><div><b>Di chuyển</b><span class="tutProg" id="tutProg0">Đi đủ 4 mét</span></div></div>
+  <div class="task locked" id="tut-task-1"><div class="dot">2</div><div><b>Nhìn xung quanh</b><span class="tutProg" id="tutProg1">Xoay nhìn đủ vòng</span></div></div>
+  <div class="task locked" id="tut-task-2"><div class="dot">3</div><div><b>Tương tác</b><span class="tutProg" id="tutProg2">Nhặt bình chữa cháy tập</span></div></div>
+  <div class="task locked" id="tut-task-3"><div class="dot">4</div><div><b>Xịt bình thử</b><span class="tutProg" id="tutProg3">Giữ xịt đủ 2 giây</span></div></div>
+  <div style="margin-top:8px;font-size:12px;color:var(--muted);line-height:1.45">Văn phòng an toàn: không cháy, không tính giờ. Làm xong bước này mới mở bước tiếp theo.</div>
+</div>
+
 <div id="minimapWrap"><label>Sơ đồ văn phòng</label><canvas id="minimap" width="264" height="192"></canvas></div>
 
 <div id="crosshair"><div id="crossDot"></div></div>
@@ -173,6 +215,7 @@ body.touch #minimapWrap{display:none}
   <div class="invSlot"><span id="invBreakerIcon">⚡</span><label id="invBreakerText">Điện: Đang BẬT</label></div>
 </div>
 
+<div id="modeBadge">💻 Bản Máy tính</div>
 <div id="joystick"><div id="stick"></div></div>
 <button id="btnInteract">E<br>TƯƠNG TÁC</button>
 <button id="btnSpray">GIỮ<br>XỊT</button>
@@ -190,10 +233,14 @@ body.touch #minimapWrap{display:none}
       <div class="infoBox"><b>📱 Điều khiển mobile</b><p>Joystick trái để đi, vuốt phải màn hình để nhìn, nút E và XỊT ở góc phải.</p></div>
     </div>
     <div class="infoBox"><b>🚪 Cách di chuyển khi đang ở trong đám cháy (ngoài đời thật)</b><p>1) <b>Khom thấp người, bò sát sàn nếu khói dày</b> — khói và khí nóng bay lên cao, lớp không khí sát sàn thường ít khói và mát hơn (không hẳn là sạch).<br>2) <b>Dùng khăn/vải sẵn có che mũi miệng tạm thời</b> nếu đang ở ngay bên cạnh — nhưng khăn (kể cả khăn ướt) <b>không lọc được khí độc</b> như CO, nên <b>đừng mất thời gian tìm khăn hay nước</b>; ưu tiên thoát ra ngay.<br>3) <b>Sờ mu bàn tay lên cửa/tay nắm trước khi mở</b> — nếu nóng, không mở, tìm lối khác.<br>4) <b>Bám sát tường</b> lần theo hướng biển EXIT gần nhất, <b>tuyệt đối không dùng thang máy</b>.<br>5) Ra ngoài tới <b>điểm tập kết an toàn</b>, gọi <b>114</b>, không quay lại lấy đồ.</p></div>
-    <div class="kbdRow"><span>⏱️ 3 phút trước khi khói quá dày</span><span>🧯 Kiến thức PCCC thật</span><span>🏆 Thắng khi lửa về 0%</span></div>
-    <div style="height:14px"></div>
-    <button class="btn btnPrimary" id="btnStart">▶ BẮT ĐẦU — TÔI NGỬI THẤY MÙI KHÉT!</button>
-    <p style="text-align:center;font-size:12px;margin-top:10px">Mẹo: Quan sát kỹ xung quanh, đọc các bảng hướng dẫn trong phòng và suy nghĩ trước khi hành động.</p>
+    <div class="kbdRow"><span>🏫 Level 0: tập luyện trước ở văn phòng an toàn</span><span>⏱️ 3 phút trước khi khói quá dày</span><span>🧯 Kiến thức PCCC thật</span><span>🏆 Thắng khi lửa về 0%</span></div>
+    <div style="height:6px"></div>
+    <p style="font-weight:900;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:10px 0 2px">Chọn phiên bản để chơi</p>
+    <div class="versionGrid">
+      <button class="versionBtn primary" id="btnStartPC"><span class="vIcon">💻</span><span><b>Bản MÁY TÍNH</b><p>WASD + chuột. Click để khóa chuột, giữ &amp; kéo nếu không khóa được. E tương tác, giữ F xịt bình.</p></span></button>
+      <button class="versionBtn" id="btnStartMobile"><span class="vIcon">📱</span><span><b>Bản ĐIỆN THOẠI</b><p>Joystick trái di chuyển + vuốt phải nhìn cùng lúc (đa chạm). Nút E đỏ &amp; XỊT xanh ở góc phải.</p></span></button>
+    </div>
+    <p style="text-align:center;font-size:12px;margin-top:8px">Bạn đang dùng thiết bị nào thì chọn bản đó — chọn sai vẫn chơi được nhưng điều khiển sẽ không thuận tay.</p>
   </div>
 </div>
 
@@ -248,6 +295,10 @@ let tipLowShown=false, tipExitShown=false;
 let startTime=null, elapsed=0;
 let player={x:2.25,z:5.55,speed:3.4};
 let interactTarget=null;
+let playMode=null; // 'pc' | 'mobile' — chosen on the start screen
+// Level 0 tutorial state (safe office practice, no fire, no timer)
+let tutorial=false,tutDone=false,tutStep=0,tutMoveDist=0,tutLookTotal=0,tutSprayTime=0,tutHasExt=false;
+let lastPX=0,lastPZ=0,lastLookYaw=0,lastLookPitch=0;
 
 // Audio tiny synth
 let audioCtx=null;
@@ -445,6 +496,20 @@ interactables.push({x:1.2,z:5.0,id:'phone',title:'Điện thoại bàn — gọi
 box(1.2,2.2,0.08,0x16a34a,8.5,1.1,6.82);
 interactables.push({x:8.5,z:6.2,id:'exit',title:'Cửa thoát hiểm',desc:'exit'});
 
+// Level 0 practice extinguisher (teal, only visible during the tutorial)
+const practiceExt=(function(){
+  const g=new THREE.Group();g.position.set(1.2,0,4.3);scene.add(g);
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.55,16),new THREE.MeshStandardMaterial({color:0x0f766e,metalness:0.3,roughness:0.4}));b.position.y=0.45;g.add(b);
+  const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.06,0.22,10),new THREE.MeshStandardMaterial({color:0x111827}));nozzle.position.set(0.13,0.78,0);nozzle.rotation.z=-0.6;g.add(nozzle);
+  const lbl=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.18,0.02),new THREE.MeshStandardMaterial({color:0xffffff}));lbl.position.set(0,0.48,0.16);g.add(lbl);
+  g.visible=false;
+  return g;
+})();
+interactables.push({group:practiceExt,x:1.2,z:4.3,id:'practice_ext',title:'Bình chữa cháy TẬP (xanh) — nhấn E để nhặt',desc:'practice'});
+// Pulsing beacon ring marking the practice target during tutorial step 3
+const beacon=new THREE.Mesh(new THREE.RingGeometry(0.34,0.52,32),new THREE.MeshBasicMaterial({color:0x2dd4bf,transparent:true,opacity:0.85,side:THREE.DoubleSide}));
+beacon.rotation.x=-Math.PI/2;beacon.position.set(1.2,0.03,4.3);beacon.visible=false;scene.add(beacon);
+
 // Plants, cabinets
 cyl(0.22,0.28,0.4,0x92400e,8.8,0.2,-5.8);cyl(0.35,0.12,0.7,0x16a34a,8.8,0.75,-5.8);
 box(1.8,1.1,0.5,0x6b7280,8.9,0.55,3.8);addCollider(8.9,3.8,1.9,0.7);
@@ -475,11 +540,18 @@ function dialog(title,text,choices,badge='💡 Tình huống'){
   document.getElementById('dialogOverlay').classList.remove('hidden');
   document.exitPointerLock&&document.exitPointerLock();
 }
-document.getElementById('dialogClose').onclick=()=>{document.getElementById('dialogOverlay').classList.add('hidden');lockPointer();};
+document.getElementById('dialogClose').onclick=()=>{document.getElementById('dialogOverlay').classList.add('hidden');if(playMode==='pc') lockPointer();};
 
 // ============ INTERACTION LOGIC ============
 function handleInteract(obj){
   if(!obj) return;
+  if(obj.id==='practice_ext'){
+    if(!tutorial) return;
+    if(tutStep!==2){showToast('Khoan đã — hoàn thành bước hiện tại trước nhé!','#ea580c');return;}
+    tutHasExt=true;practiceExt.visible=false;beacon.visible=false;
+    document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>🧯</span><label>Bình TẬP<br>Xịt thử ở bước 4</label>';
+    beep(740,0.12);setTutStep(3);return;
+  }
   if(obj.id==='poster'){
     posterRead=true;addScore(10);
     dialog('📋 Bảng PCCC trên tường','<b>Cháy điện (máy in, ổ điện):</b><br>1) Ngắt cầu dao ngay<br>2) <b>TUYỆT ĐỐI không dùng nước</b> — gây giật & chập<br>3) Dùng bình <b>CO₂</b> (bình đỏ, loa đen) hoặc bình bột<br>4) Gọi <b>114</b> nếu lửa lớn<br><br><i>Bạn đã đọc hướng dẫn (+10 điểm)</i>',null,'📋 Kiến thức PCCC');
@@ -565,7 +637,7 @@ function updateFireUI(){
 function lockPointer(){
   try{const p=canvas.requestPointerLock&&canvas.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}catch(e){}
 }
-canvas.addEventListener('click',()=>{if(gameStarted&&!gameOver) lockPointer();});
+canvas.addEventListener('click',()=>{if(gameStarted&&!gameOver&&playMode!=='mobile') lockPointer();});
 document.addEventListener('mousemove',e=>{
   if(document.pointerLockElement===canvas){yaw-=e.movementX*0.0022;pitch-=e.movementY*0.0022;pitch=Math.max(-1.2,Math.min(1.2,pitch));}
 });
@@ -582,12 +654,33 @@ addEventListener('mouseup',()=>mouseDragging=false);
 document.addEventListener('pointerlockerror',()=>{showToast('Trình duyệt không cho khóa chuột — cứ GIỮ & KÉO chuột để nhìn xung quanh nhé.','#0f766e',3600);});
 // Touch-capable devices get the on-screen controls even if pointer:coarse misses them
 if(('ontouchstart' in window)||navigator.maxTouchPoints>0) document.body.classList.add('touch');
-let dragLook=false,lastTouchX=0,lastTouchY=0;
-canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){lastTouchX=e.touches[0].clientX;lastTouchY=e.touches[0].clientY;}}, {passive:true});
-canvas.addEventListener('touchmove',e=>{
-  const t=e.touches[0];if(t.clientX>innerWidth*0.45){yaw-=(t.clientX-lastTouchX)*0.005;pitch-=(t.clientY-lastTouchY)*0.005;pitch=Math.max(-1.2,Math.min(1.2,pitch));}
-  lastTouchX=t.clientX;lastTouchY=t.clientY;
+// --- Multi-touch look control (FIX: move + look at the same time on phones) ---
+// Old code read e.touches[0], which is the JOYSTICK finger when two fingers are
+// down, so the camera froze while moving. We now track the look finger by its
+// own touch identifier, completely independent from the joystick finger.
+let lookTouchId=null,lastTouchX=0,lastTouchY=0;
+canvas.addEventListener('touchstart',e=>{
+  for(const t of e.changedTouches){
+    if(lookTouchId!==null) continue;
+    // Never steal the joystick finger or touches that start on HUD buttons
+    if(typeof joyId!=='undefined'&&t.identifier===joyId) continue;
+    lookTouchId=t.identifier;lastTouchX=t.clientX;lastTouchY=t.clientY;
+  }
 },{passive:true});
+canvas.addEventListener('touchmove',e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier!==lookTouchId) continue;
+    yaw-=(t.clientX-lastTouchX)*0.0052;pitch-=(t.clientY-lastTouchY)*0.0052;
+    pitch=Math.max(-1.2,Math.min(1.2,pitch));
+    lastTouchX=t.clientX;lastTouchY=t.clientY;
+  }
+  if(lookTouchId!==null&&e.cancelable) e.preventDefault();
+},{passive:false});
+function endLookTouch(e){
+  for(const t of e.changedTouches){ if(t.identifier===lookTouchId) lookTouchId=null; }
+}
+canvas.addEventListener('touchend',endLookTouch);
+canvas.addEventListener('touchcancel',endLookTouch);
 
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE') tryInteract();if(e.code==='KeyF') spraying=true;});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyF') spraying=false;});
@@ -622,6 +715,7 @@ function getNearest(){
   if(fireDist<3) { /* not button, spraying */ }
   for(const o of interactables){
     if(o.group&&o.group.visible===false) continue;
+    if(tutorial&&o.id!=='practice_ext') continue; // Level 0: only the practice item is active
     const d=Math.hypot(player.x-o.x,player.z-o.z);
     if(d<bestDist){bestDist=d;best=o;}
   }
@@ -643,6 +737,73 @@ function drawMinimap(){
   // player
   const px=132+player.x*11,py=96-player.z*11;mm.fillStyle='#fff';mm.beginPath();mm.arc(px,py,6,0,7);mm.fill();mm.strokeStyle='#0ea5e9';mm.lineWidth=2;mm.stroke();
   mm.fillStyle='#e5e7eb';mm.font='9px sans-serif';mm.fillText('Bạn',px+8,py+3);mm.fillText('Cầu dao',132+9*11+7,96-1.8*11);mm.fillText('CO₂',132+6.2*11+8,96-(-4.2)*11);
+}
+
+// ============ LEVEL 0 TUTORIAL ============
+function setTutStep(n){
+  tutStep=n;
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('tut-task-'+i);if(!el) continue;
+    el.className='task '+(i<n?'done':i===n?'active':'locked');
+    el.querySelector('.dot').textContent=i<n?'✓':(i+1);
+  }
+  beacon.visible=(n===2&&!tutHasExt);
+  const mob=playMode==='mobile';
+  if(n===0) updateObjective('Bước 1/4 — Di chuyển', mob?'Đẩy JOYSTICK ở góc trái để đi lại trong văn phòng. Đi đủ 4 mét là xong bước này.':'Dùng phím W A S D (hoặc phím mũi tên) để đi lại trong văn phòng. Đi đủ 4 mét là xong bước này.');
+  if(n===1) updateObjective('Bước 2/4 — Nhìn xung quanh', mob?'Vuốt ngón tay ở phía PHẢI màn hình để xoay nhìn — tay kia vẫn giữ joystick di chuyển được.':'Giữ & kéo chuột để nhìn, hoặc click vào màn hình để khóa chuột rồi di chuột nhìn quanh phòng.');
+  if(n===2) updateObjective('Bước 3/4 — Tương tác: nhặt bình tập', mob?'Đi tới bình xanh có vòng sáng rồi chạm nút đỏ TƯƠNG TÁC.':'Đi tới bình xanh có vòng sáng rồi nhấn phím E để nhặt bình chữa cháy tập.');
+  if(n===3) updateObjective('Bước 4/4 — Xịt bình thử', mob?'GIỮ nút XỊT (xanh) để xịt thử — giữ đủ 2 giây là hoàn thành Level 0!':'GIỮ phím F để xịt thử — giữ đủ 2 giây là hoàn thành Level 0!');
+  if(n>0){addScore(10);showToast('✅ Xong bước '+n+'/4! Sang bước '+(n+1)+'/4.','#0f766e',2200);}
+}
+
+function tutorialUpdate(dt){
+  promptEl.style.display='none';
+  scene.fog.density=0.004; // practice room stays clear — no smoke
+  document.getElementById('smokeBar').style.width='0%';
+  const moved=Math.hypot(player.x-lastPX,player.z-lastPZ);lastPX=player.x;lastPZ=player.z;
+  const lookDelta=Math.abs(yaw-lastLookYaw)+Math.abs(pitch-lastLookPitch);lastLookYaw=yaw;lastLookPitch=pitch;
+  interactTarget=getNearest();
+  let sprayingNow=false;
+  if(tutStep===0){
+    tutMoveDist+=moved;
+    document.getElementById('tutProg0').textContent='Đã đi '+Math.min(4,tutMoveDist).toFixed(1)+' / 4 mét';
+    if(tutMoveDist>=4) setTutStep(1);
+  } else if(tutStep===1){
+    tutLookTotal+=lookDelta;
+    document.getElementById('tutProg1').textContent='Đã xoay nhìn '+Math.min(100,Math.round(tutLookTotal/3*100))+'%';
+    if(tutLookTotal>=3) setTutStep(2);
+  } else if(tutStep===2){
+    if(interactTarget&&interactTarget.id==='practice_ext'){promptEl.style.display='block';promptEl.innerHTML='<kbd>E</kbd> Nhặt bình chữa cháy TẬP — nhấn E / nút TƯƠNG TÁC';}
+  } else if(tutStep===3){
+    if(tutHasExt&&(spraying||sprayingMobile)){
+      sprayingNow=true;tutSprayTime+=dt;
+      document.getElementById('tutProg3').textContent='Đã xịt '+Math.min(2,tutSprayTime).toFixed(1)+' / 2 giây';
+      if(tutSprayTime>=2&&!tutDone) finishTutorial();
+    }
+  }
+  return sprayingNow;
+}
+
+function finishTutorial(){
+  tutDone=true;beacon.visible=false;promptEl.style.display='none';
+  dialog('🎓 Hoàn thành Level 0 — sẵn sàng vào tình huống thật!','Bạn đã nắm đủ 4 thao tác cơ bản: <b>di chuyển • nhìn xung quanh • tương tác • xịt bình</b>.<br><br>Giờ vào Level 1: văn phòng đang có mùi khét, khói sắp lan. Hãy xử lý đúng quy trình PCCC: <b>ngắt cầu dao → lấy bình CO₂ → dập lửa</b>, và nhớ ưu tiên an toàn của bản thân.',[
+    {label:'🔥 Vào Level 1 — Cháy văn phòng thật',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');startMainLevel();}}
+  ],'🏫 Level 0 — Văn phòng tập luyện');
+}
+
+function startMainLevel(){
+  tutorial=false;document.body.classList.remove('in-tutorial');
+  tutHasExt=false;hasExtinguisher=null;practiceExt.visible=false;beacon.visible=false;
+  document.getElementById('invItem').className='invSlot empty';
+  document.getElementById('invItem').innerHTML='<span>🎒</span><label>Chưa có đồ</label>';
+  document.querySelector('#missionCard b').textContent='🔥 Nhiệm vụ hiện tại';
+  fireGroup.visible=true;smokePoints.visible=true;
+  player.x=2.25;player.z=5.55;yaw=0;pitch=0;
+  startTime=Date.now();elapsed=0;
+  showToast('👃 Mùi khét từ phía Bắc-Tây… đi kiểm tra ngay!','#ea580c',3400);
+  updateObjective('Tìm nguồn khói & mùi khét', playMode==='mobile'?'Joystick để đi, vuốt để nhìn — cả hai cùng lúc được. Đi về phía máy in (Bắc-Tây).':'Đi về phía góc Bắc-Tây (máy in). Để ý khói và bảng PCCC trên tường.');
+  beep(660,0.15);
+  if(playMode==='pc') lockPointer();
 }
 
 // ============ MAIN LOOP ============
@@ -679,6 +840,8 @@ function animate(){
     if(!hitsCollider(player.x,nz)) player.z=nz;
     camera.position.set(player.x,1.65+Math.sin(t*2.2)*0.015,player.z);
     camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
+   if(tutorial){ sprayActive=tutorialUpdate(dt); }
+   else{
     checkFireProximity();
     // interact prompt
     interactTarget=getNearest();
@@ -716,12 +879,14 @@ function animate(){
     smokeMat.opacity=0.25+smokeLevel*0.004;
     if(timeLeft<=0||smokeLevel>=100){loseGame();}
     elapsed=(Date.now()-startTime)/1000;
+   }
   }
   // fire animation
   const fh=Math.max(0.12,fireHealth/100);
   fireGroup.scale.set(fh, fh*(0.9+Math.sin(t*9)*0.12), fh);
   fireGroup.children.forEach((c,i)=>{c.rotation.y=t*(1+i*0.3);c.scale.y=1+Math.sin(t*11+i)*0.18;});
-  fireLight.intensity=fireHealth>0?1.6+Math.sin(t*13)*0.6:0;
+  fireLight.intensity=tutorial?0:(fireHealth>0?1.6+Math.sin(t*13)*0.6:0);
+  if(beacon.visible){const bs=1+Math.sin(t*5)*0.18;beacon.scale.set(bs,bs,bs);beacon.material.opacity=0.55+Math.sin(t*5)*0.3;}
   scene.fog.color.setHSL(0,0,0.16-smokeLevel*0.0005);
   // smoke rise
   const sp=smokeGeo.attributes.position.array;
@@ -749,17 +914,41 @@ function loseGame(){
   document.getElementById('loseScreen').classList.remove('hidden');
 }
 
-// START
-document.getElementById('btnStart').onclick=()=>{
+// START — two versions, chosen on the start screen
+let alarmTimerStarted=false;
+function startGame(mode){
+  playMode=mode;
+  document.body.classList.remove('mode-pc','mode-mobile','touch');
+  document.body.classList.add('mode-'+mode);
+  if(mode==='mobile') document.body.classList.add('touch');
+  const badge=document.getElementById('modeBadge');
+  if(badge) badge.textContent=mode==='mobile'?'📱 Bản Điện thoại':'💻 Bản Máy tính';
   document.getElementById('startScreen').classList.add('hidden');
-  gameStarted=true;startTime=Date.now();yaw=0;pitch=0;player.x=2.25;player.z=5.55; // spawn in the open aisle beside your desk (aligned with the gap between desk rows), facing into the office (north) so W walks straight ahead
-  lockPointer();
-  showToast('👃 Mùi khét từ phía Bắc-Tây… đi kiểm tra ngay!','#ea580c',3400);
-  updateObjective('Tìm nguồn khói & mùi khét','Đi về phía góc Bắc-Tây (máy in). Để ý khói và bảng PCCC trên tường.');
+  gameStarted=true;
+  // ---- Level 0 first: safe office practice, no fire, no timer ----
+  tutorial=true;tutDone=false;tutStep=0;tutMoveDist=0;tutLookTotal=0;tutSprayTime=0;tutHasExt=false;
+  document.body.classList.add('in-tutorial');
+  fireGroup.visible=false;smokePoints.visible=false;practiceExt.visible=true;beacon.visible=false;
+  yaw=0;pitch=0;player.x=2.25;player.z=5.55;lastPX=player.x;lastPZ=player.z;lastLookYaw=0;lastLookPitch=0; // spawn beside your desk, facing into the office (north)
+  document.getElementById('timer').textContent='∞';
+  document.getElementById('smokeBar').style.width='0%';
+  document.querySelector('#missionCard b').textContent='🏫 Level 0 — Tập luyện an toàn';
+  setTutStep(0);
+  if(mode==='pc') lockPointer();
+  else document.exitPointerLock&&document.exitPointerLock();
+  showToast('🏫 Level 0: văn phòng an toàn — không cháy, không tính giờ. Làm theo từng bước trên màn hình nhé!','#0f766e',4400);
   beep(660,0.15);
-  // ambient alarm after fire found handled
-  setInterval(()=>{if(seenFire&&fireHealth>0&&!gameOver) beep(980,0.07,'square',0.03);},2400);
-};
+  if(!alarmTimerStarted){alarmTimerStarted=true;setInterval(()=>{if(seenFire&&fireHealth>0&&!gameOver) beep(980,0.07,'square',0.03);},2400);}
+}
+const btnPC=document.getElementById('btnStartPC');
+const btnMB=document.getElementById('btnStartMobile');
+if(btnPC) btnPC.onclick=()=>startGame('pc');
+if(btnMB) btnMB.onclick=()=>startGame('mobile');
+// Auto-highlight the likely version (still the user's choice)
+if(('ontouchstart' in window)||navigator.maxTouchPoints>0){
+  if(btnMB) btnMB.classList.add('primary');
+  if(btnPC) btnPC.classList.remove('primary');
+}
 </script>
 </body>
 </html>
