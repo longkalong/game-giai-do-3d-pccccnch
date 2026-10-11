@@ -14,3 +14,6 @@ Game giải đố 3D góc nhìn thứ nhất (Three.js): bạn là nhân viên v
 - Kèm bài học an toàn PCCC ở màn thắng (gọi 114 khi lửa lớn).
 
 Chúc chơi vui và nhớ kiến thức PCCC!
+
+## Phiên bản mới nhất
+- 2026-10-11 16:50 +07: Level 1 — bình chữa cháy xịt hết cỡ cũng chỉ hạ lửa từ 100% xuống 90% rồi kẹt; không dùng vòi nước kịp thì lửa bùng lại 100%; cửa thoát hiểm mở ra đi bộ qua thật (không tele); model bình bột (đồng hồ áp) / CO₂ (loa loe) mới.
