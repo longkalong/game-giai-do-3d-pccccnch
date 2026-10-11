@@ -8,6 +8,7 @@
 <title>Game Giải Đố 3D — Cháy Văn Phòng</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
 <style>
 :root{
   --bg:#fff7ed; --ink:#1c1917; --muted:#78716c; --card:#ffffff; --line:#e7e5e4;
@@ -423,17 +424,32 @@ for(let i=-6;i<=6;i+=4){
 // Desks rows
 const colliders=[];
 function addCollider(x,z,w,d){colliders.push({x,z,w,d});}
+// Group-scoped primitive builders: each desk keeps its top / monitor / chair in
+// separate groups so a loaded .glb model can replace exactly that part (and the
+// primitives stay visible as the fallback whenever a model file fails to load).
+function gbox(parent,w,h,d,color,x,y,z,ry){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:0.85}));
+  m.position.set(x,y,z);m.rotation.y=ry||0;m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+}
+function gcyl(parent,rt,rb,h,color,x,y,z){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,18),new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.25}));
+  m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m;
+}
+const deskUnits=[]; // {x,z,topG,monG,chairG,imacWrap} — filled by createDesk, used by the GLB swap below
 function createDesk(x,z,label){
-  box(2.2,0.08,1.1,0x92400e,x,0.78,z);
-  box(0.08,0.78,0.9,0x78350f,x-1,z,0);box(0.08,0.78,0.9,0x78350f,x+1,z,0);
+  const topG=new THREE.Group(),monG=new THREE.Group(),chairG=new THREE.Group();
+  scene.add(topG);scene.add(monG);scene.add(chairG);
+  gbox(topG,2.2,0.08,1.1,0x92400e,x,0.78,z);
+  gbox(topG,0.08,0.78,0.9,0x78350f,x-1,z,0);gbox(topG,0.08,0.78,0.9,0x78350f,x+1,z,0);
   // monitor
-  const mon=box(0.9,0.55,0.05,0x111827,x,1.15,z-0.25);
-  const scr=box(0.82,0.47,0.02,0x22d3ee,x,1.15,z-0.22);scr.material.emissive=new THREE.Color(0x0891b2);scr.material.emissiveIntensity=0.7;
-  box(0.5,0.05,0.28,0x1f2937,x,0.84,z+0.08); // keyboard
+  gbox(monG,0.9,0.55,0.05,0x111827,x,1.15,z-0.25);
+  const scr=gbox(monG,0.82,0.47,0.02,0x22d3ee,x,1.15,z-0.22);scr.material.emissive=new THREE.Color(0x0891b2);scr.material.emissiveIntensity=0.7;
+  gbox(monG,0.5,0.05,0.28,0x1f2937,x,0.84,z+0.08); // keyboard
   // chair
-  cyl(0.28,0.32,0.08,0xdc2626,x,0.48,z+0.75);
-  box(0.55,0.6,0.08,0x991b1b,x,0.95,z+1.02);
+  gcyl(chairG,0.28,0.32,0.08,0xdc2626,x,0.48,z+0.75);
+  gbox(chairG,0.55,0.6,0.08,0x991b1b,x,0.95,z+1.02);
   addCollider(x,z,2.4,1.3);
+  deskUnits.push({x:x,z:z,topG:topG,monG:monG,chairG:chairG,imacWrap:null});
 }
 createDesk(-3,2.5);createDesk(0.5,2.5);createDesk(4,2.5);
 createDesk(-3,-0.8);createDesk(0.5,-0.8);createDesk(4,-0.8);
@@ -656,6 +672,120 @@ function heldExtModel(type){
   camera.add(g);return g;
 }
 const heldCO2=heldExtModel('CO2'),heldPowder=heldExtModel('POWDER'),heldNozzle=heldExtModel('NOZZLE'),heldPractice=heldExtModel('PRACTICE');
+
+// ============ GLB MODEL UPGRADE ============
+// Real .glb furniture (assets/models/) swapped in as each file loads. The
+// primitive versions built above stay on screen whenever a file is missing or
+// fails, so positions, colliders and gameplay are identical either way.
+let deskTopY=0.82; // desktop surface height (the GLB gaming desk sits a touch lower)
+function glbShadows(root){root.traverse(function(o){if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});}
+function prepClone(root,sx,sy,sz,ry){
+  const c=root.clone(true);
+  if(sx) c.scale.set(sx,sy,sz);
+  if(ry) c.rotation.y=ry;
+  glbShadows(c);
+  return c;
+}
+// Wrap a prepared clone so its bounding-box centre sits on the wrapper origin
+// (grounded=true keeps the model's base at y=0 instead of centring vertically).
+function glbWrap(obj,grounded){
+  const w=new THREE.Group();w.add(obj);
+  const bb=new THREE.Box3().setFromObject(obj);const c=bb.getCenter(new THREE.Vector3());
+  obj.position.x-=c.x;obj.position.z-=c.z;obj.position.y-=grounded?bb.min.y:c.y;
+  return w;
+}
+function swapGLBDesks(root){ // ban-gaming.glb -> tabletop + legs of all 6 desks
+  deskUnits.forEach(function(u){
+    const w=glbWrap(prepClone(root,1.571,1,1.566,0),true);
+    w.position.set(u.x,0,u.z);scene.add(w);u.topG.visible=false;
+  });
+  deskTopY=0.75;
+  deskUnits.forEach(function(u){if(u.imacWrap) u.imacWrap.position.y=deskTopY;});
+}
+function swapGLBImac(root){ // imac-de-ban.glb -> screen + keyboard on every desk
+  deskUnits.forEach(function(u){
+    const w=glbWrap(prepClone(root,0,0,0,0),true);
+    w.position.set(u.x,deskTopY,u.z-0.25);scene.add(w);
+    u.imacWrap=w;u.monG.visible=false;
+  });
+}
+function swapGLBChairs(root){ // ghe-gaming.glb -> the chair at every desk
+  deskUnits.forEach(function(u){
+    const w=glbWrap(prepClone(root,0,0,0,Math.PI),true); // model's backrest sits at -Z; turn it to face the desk
+    w.position.set(u.x,0,u.z+0.78);scene.add(w);u.chairG.visible=false;
+  });
+}
+function swapGLBDoor(root){ // cua-thoat-hiem.glb -> exit door (frame stays fixed, panel keeps the hinge)
+  const frameNames={door_0:true,door_1:true,door_2:true,door_12:true,door_13:true}; // jambs, header, EXIT sign
+  const frameG=new THREE.Group();frameG.position.set(8.5,0,6.98);
+  const panelWrap=new THREE.Group();panelWrap.position.set(0.6,0,0.12);
+  let panelKids=0;
+  root.children.slice().forEach(function(k){
+    glbShadows(k);
+    if(frameNames[k.name]) frameG.add(k); else {panelWrap.add(k);panelKids++;}
+  });
+  if(!panelKids) return; // unexpected structure: keep the primitive door
+  scene.add(frameG);doorPivot.add(panelWrap);
+  doorPanel.visible=false;doorHandle.visible=false;exitSign.visible=false;
+}
+function swapGLBNozzle(root){ // lang-chua-chay.glb -> first-person hose nozzle in hand
+  heldNozzle.children.forEach(function(c){c.visible=false;});
+  const c=prepClone(root,0,0,0,Math.PI); // model tip points +Z; turn it to camera-forward (-Z)
+  heldNozzle.add(glbWrap(c,false));
+}
+function swapGLBHose(root){ // voi-chua-chay.glb -> coiled hose inside the hallway cabinet
+  const c=root.clone(true);c.rotation.x=Math.PI/2;glbShadows(c); // flat coil -> standing reel facing the player
+  const w=glbWrap(c,false);w.position.set(3.55,1.25,11.7);hallwayGroup.add(w);
+  hoseReel.visible=false;
+}
+function glbIsBinary(buf){
+  if(!buf||buf.byteLength<4) return false;
+  var b=new Uint8Array(buf,0,4);
+  return b[0]===0x67&&b[1]===0x6C&&b[2]===0x54&&b[3]===0x46; // 'glTF'
+}
+function glbBase64ToArrayBuffer(buf){
+  var text=new TextDecoder('utf-8').decode(buf).trim().replace(/\s+/g,'');
+  var binary=atob(text);
+  var bytes=new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  return bytes.buffer;
+}
+function loadOneGLB(loader,filename,onLoad){
+  var urls=['assets/models/'+filename,'models/'+filename];
+  function tryUrl(idx){
+    if(idx>=urls.length) return; // both paths failed — primitive fallback stays
+    fetch(urls[idx]).then(function(res){
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      return res.arrayBuffer();
+    }).then(function(buf){
+      var data=buf;
+      if(!glbIsBinary(buf)){
+        try{ data=glbBase64ToArrayBuffer(buf); }catch(e){ tryUrl(idx+1); return; }
+      }
+      loader.parse(data,'',function(gltf){
+        try{ onLoad(gltf); }catch(e){}
+      },function(){ tryUrl(idx+1); });
+    }).catch(function(){ tryUrl(idx+1); });
+  }
+  tryUrl(0);
+}
+function loadGLBModels(){
+  if(!window.THREE||typeof THREE.GLTFLoader!=='function') return;
+  var loader=new THREE.GLTFLoader();
+  loadOneGLB(loader,'ban-gaming.glb',function(g){swapGLBDesks(g.scene);});
+  loadOneGLB(loader,'imac-de-ban.glb',function(g){swapGLBImac(g.scene);});
+  loadOneGLB(loader,'ghe-gaming.glb',function(g){swapGLBChairs(g.scene);});
+  loadOneGLB(loader,'cua-thoat-hiem.glb',function(g){swapGLBDoor(g.scene);});
+  loadOneGLB(loader,'lang-chua-chay.glb',function(g){swapGLBNozzle(g.scene);});
+  loadOneGLB(loader,'voi-chua-chay.glb',function(g){swapGLBHose(g.scene);});
+}
+if(window.THREE&&THREE.GLTFLoader){loadGLBModels();}
+else{ // CDN fallback for the loader script itself
+  const s=document.createElement('script');
+  s.src='https://unpkg.com/three@0.147.0/examples/js/loaders/GLTFLoader.js';
+  s.onload=function(){loadGLBModels();};
+  document.head.appendChild(s);
+}
 
 // Plants, cabinets
 cyl(0.22,0.28,0.4,0x92400e,8.8,0.2,-5.8);cyl(0.35,0.12,0.7,0x16a34a,8.8,0.75,-5.8);
