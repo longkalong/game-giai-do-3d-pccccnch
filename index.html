@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="color-scheme" content="light dark"/>
 <link rel="icon" href="data:,"/>
-<title>Mô phỏng PCCC và CNCH 3D v1.261011-4</title>
+<title>Mô phỏng PCCC và CNCH 3D v1.261011-11</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -89,6 +89,17 @@ body.in-tutorial #minimapWrap{display:none}
 #prompt{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:22;background:#111827;color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px 14px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.4);display:none;max-width:92vw;text-align:center}
 #prompt kbd{background:#fff;color:#111;padding:2px 7px;border-radius:6px;font-family:monospace}
 #tooltip{position:fixed;left:50%;top:calc(50% - 72px);transform:translateX(-50%);z-index:16;background:rgba(17,24,39,.94);color:#fff;border:2px solid #22c55e;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.45);display:none;max-width:92vw;text-align:center;pointer-events:none;white-space:nowrap}
+#cabinetChoices{position:fixed;left:50%;bottom:172px;transform:translateX(-50%);z-index:23;display:none;gap:10px;width:min(620px,calc(100vw - 24px));pointer-events:none}
+#cabinetChoices.show{display:flex}
+.cabChoice{flex:1;min-width:0;appearance:none;border:2px solid rgba(255,255,255,.75);background:rgba(17,24,39,.94);color:#fff;border-radius:18px;padding:10px 12px;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;box-shadow:0 14px 30px rgba(0,0,0,.42);pointer-events:auto}
+.cabChoice .choiceNum{width:48px;height:48px;flex:0 0 48px;border-radius:50%;background:#dc2626;border:2px solid #fff;display:grid;place-items:center;font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:900;line-height:1}
+.cabChoice b{display:block;font-size:16px;line-height:1.15}
+.cabChoice small{display:block;color:#d1d5db;font-size:11px;line-height:1.3;margin-top:3px}
+.cabChoice:disabled{opacity:.48;cursor:default}
+.cabChoice.done .choiceNum{background:#16a34a}
+@media(max-width:640px){#cabinetChoices{bottom:176px}.cabChoice{padding:9px}.cabChoice .choiceNum{width:42px;height:42px;flex-basis:42px;font-size:26px}.cabChoice b{font-size:14px}.cabChoice small{font-size:10px}}
+body.touch #btnInteract,body.mode-mobile #btnInteract{display:none!important}
+body.touch.has-interact-target #btnInteract,body.mode-mobile.has-interact-target #btnInteract{display:block!important}
 #toast{position:fixed;left:50%;top:86px;transform:translateX(-50%);z-index:30;background:#dc2626;color:#fff;padding:10px 16px;border-radius:999px;font-weight:800;font-size:13px;box-shadow:0 10px 25px rgba(220,38,38,.4);display:none;max-width:92vw;text-align:center}
 
 /* Bottom controls help */
@@ -126,6 +137,8 @@ body.mode-pc #joystick,body.mode-pc #btnInteract,body.mode-pc #btnSpray{display:
 body.mode-pc #helpBar{display:flex!important}
 body.mode-pc #minimapWrap{display:block}
 body.mode-mobile #joystick,body.mode-mobile #btnInteract,body.mode-mobile #btnSpray{display:block!important}
+body.mode-mobile:not(.has-interact-target) #btnInteract,body.touch:not(.has-interact-target) #btnInteract{display:none!important}
+body.mode-mobile.has-interact-target #btnInteract,body.touch.has-interact-target #btnInteract{display:block!important}
 body.mode-mobile #helpBar{display:none!important}
 body.mode-mobile #minimapWrap{display:none!important}
 body.mode-mobile #checklist{width:200px}
@@ -223,6 +236,10 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 <div id="crosshair"><div id="crossDot"></div></div>
 <div id="prompt"></div>
 <div id="tooltip"></div>
+<div id="cabinetChoices" aria-label="Lựa chọn tại tủ họng nước">
+  <button type="button" class="cabChoice" id="choiceNozzle"><span class="choiceNum">1</span><span><b>Lấy lăng vòi</b><small>Lăng rời giá treo và hiện trên tay</small></span></button>
+  <button type="button" class="cabChoice" id="choiceValve"><span class="choiceNum">2</span><span><b>Mở van nước</b><small>Van ngoài tủ xoay mở, nước vào vòi</small></span></button>
+</div>
 <div id="toast"></div>
 
 <div id="helpBar"><span><b>W A S D</b> di chuyển</span><span><b>Chuột</b> kéo để nhìn (click = khóa chuột)</span><span><b>E</b> tương tác</span><span><b>F</b> xịt bình (giữ)</span><span><b>Shift</b> chạy</span></div>
@@ -240,7 +257,7 @@ body.mode-mobile #modeBadge{bottom:196px;left:auto;right:12px}
 <!-- START -->
 <div class="overlay" id="startScreen">
   <div class="panel">
-    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-4</span>
+    <span class="badge">🚒 Mô phỏng PCCC và CNCH 3D · v1.261011-11</span>
     <h1>Đang làm việc bỗng <em>ngửi thấy mùi khét…</em> có khói!</h1>
     <p>Bạn đang làm việc thì ngửi thấy mùi khét lạ, khói bắt đầu lan trong văn phòng. Hãy đi điều tra xem khói từ đâu, suy luận loại cháy và xử lý an toàn. Nếu lửa lớn hoặc khói dày, ưu tiên thoát ra ngoài và gọi 114 — chỉ dập khi lửa còn nhỏ và luôn có lối thoát sau lưng.</p>
     <div class="grid2">
@@ -545,37 +562,159 @@ const roomSmokeMat=new THREE.PointsMaterial({color:0x71717a,size:1.7,transparent
 const roomSmoke=new THREE.Points(roomSmokeGeo,roomSmokeMat);roomSmoke.visible=false;scene.add(roomSmoke);
 const veilEl=document.getElementById('smokeVeil');
 
-// Spray particles
-const sprayCount=120;const sprayPos=new Float32Array(sprayCount*3);
+// Spray particles + water jet.
+// Extinguishers make a short white gas cone. The hose nozzle fires water
+// like a volley of projectiles: a tight, fast, deep-blue stream of droplets
+// leaves the lăng tip on a shallow arc (never a straight laser line), the
+// visible cone is cut where the stream strikes, and every droplet bursts
+// into a splash the moment it smacks a wall, a desk, the floor or the fire.
+const sprayCount=1100;const sprayPos=new Float32Array(sprayCount*3);
 for(let i=0;i<sprayCount;i++){sprayPos[i*3]=999;sprayPos[i*3+1]=999;sprayPos[i*3+2]=999;}
+// Round soft droplet sprite (radial gradient) so droplets read as real
+// water drops instead of hard squares; tinted per-tool by material color.
+const dropletTex=(function(){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const rg=g.createRadialGradient(32,32,2,32,32,30);rg.addColorStop(0,'rgba(255,255,255,1)');rg.addColorStop(0.5,'rgba(255,255,255,0.9)');rg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=rg;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
 const sprayGeo=new THREE.BufferGeometry();sprayGeo.setAttribute('position',new THREE.BufferAttribute(sprayPos,3));
-const sprayPoints=new THREE.Points(sprayGeo,new THREE.PointsMaterial({color:0xffffff,size:0.22,transparent:true,opacity:0.9}));scene.add(sprayPoints);
-// Particle pool with velocity & life so the spray looks like a real gas cone
+const sprayPoints=new THREE.Points(sprayGeo,new THREE.PointsMaterial({color:0xffffff,size:0.22,transparent:true,opacity:0.95,map:dropletTex,alphaTest:0.02,depthWrite:false}));
+sprayPoints.frustumCulled=false;scene.add(sprayPoints);
 const sprayParts=[];
-for(let i=0;i<sprayCount;i++) sprayParts.push({life:0,x:999,y:999,z:999,vx:0,vy:0,vz:0});
+for(let i=0;i<sprayCount;i++) sprayParts.push({life:0,x:999,y:999,z:999,vx:0,vy:0,vz:0,splash:0});
+// The visible water jet out of the lăng tip: three layered cones with an
+// animated streak texture so the stream reads as thick, deep-blue water
+// RUSHING forward — tight and solid at the tip, flaring wide into a fan
+// of spray at the far end. Never a thin laser line: the core alone is a
+// ~30cm-wide column of water by the time it reaches the target.
+const jetFlowTex=(function(){const c=document.createElement('canvas');c.width=128;c.height=256;const g=c.getContext('2d');g.fillStyle='rgba(30,111,232,0.85)';g.fillRect(0,0,128,256);for(let i=0;i<46;i++){const x=Math.random()*128,w=2+Math.random()*5,l=40+Math.random()*150,y=Math.random()*256;const gr=g.createLinearGradient(0,y,0,y+l);gr.addColorStop(0,'rgba(191,226,255,0)');gr.addColorStop(0.5,'rgba(219,240,255,0.95)');gr.addColorStop(1,'rgba(191,226,255,0)');g.fillStyle=gr;g.fillRect(x,y,w,l);}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,3);return t;})();
+const jetMeshes=[];
+(function(){
+  function jetLayer(rFar,rTip,len,color,opacity){
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(rFar,rTip,len,20,1,true),new THREE.MeshBasicMaterial({color:color,map:jetFlowTex,transparent:true,opacity:opacity,side:THREE.DoubleSide,depthWrite:false}));
+    m.visible=false;m.frustumCulled=false;m.userData.len=len;scene.add(m);jetMeshes.push(m);return m;
+  }
+  jetLayer(0.95,0.06,8.5,0x1d4ed8,0.34);  // outer fan: the spray plume spreading at range
+  jetLayer(0.42,0.04,8.5,0x2563eb,0.55);  // main body of the stream
+  jetLayer(0.17,0.022,6.5,0x7dd3fc,0.7);  // dense bright core near the tip
+})();
+// ---- Water impact tests -------------------------------------------------
+// The stream flies like a volley of projectiles, so every droplet (and the
+// visible cone) needs to know where solid matter is: walls as half-planes,
+// furniture via its walk-collider footprint with a top height, and the
+// burning printer as a hot sphere the jet smacks into.
+function waterHitsSolid(x,y,z){
+  if(y>=3.18) return true; // ceiling
+  if(z<=-6.82&&x>-10.2&&x<10.2) return true; // office north wall
+  if(x<=-9.82&&z>-7.2&&z<7.2) return true; // office west wall
+  if(x>=9.82&&z>-7.2&&z<12.2) return true; // east wall, office + hallway
+  if(z>=6.82&&z<7.45&&((x<5.85||x>7.15)||!exitDoorOpen)) return true; // office south wall / shut door
+  if(x<=-1.82&&z>=7&&z<12.2) return true; // hallway west wall
+  if(z>=11.82&&x>-2.2&&x<10.2) return true; // hallway south wall
+  for(let i=0;i<colliders.length;i++){
+    const c=colliders[i];
+    if(Math.abs(x-c.x)<c.w/2&&Math.abs(z-c.z)<c.d/2&&y<((c.w<0.5||c.d<0.5)?3.2:1.15)) return true;
+  }
+  return false;
+}
+function waterHitsFire(x,y,z){
+  if(fireHealth<=0) return false;
+  const dx=x+7,dy=y-1.05,dz=z+4.9;
+  return dx*dx+dy*dy+dz*dz<1.35; // inside ~1.16m of the flame core
+}
+// How far the visible stream travels before it strikes something.
+function jetReach(ox,oy,oz,dx,dy,dz){
+  let t=0.4;
+  while(t<26){
+    const x=ox+dx*t,y=oy+dy*t,z=oz+dz*t;
+    if(y<=0.04||waterHitsSolid(x,y,z)||waterHitsFire(x,y,z)) return t;
+    t+=0.15;
+  }
+  return 26;
+}
 function updateSprayParticles(dt,active){
   const pos=sprayGeo.attributes.position.array;
   const cp=Math.cos(pitch);
   const fx=-Math.sin(yaw)*cp, fy=Math.sin(pitch), fz=-Math.cos(yaw)*cp;
   const rx=Math.cos(yaw), rz=-Math.sin(yaw);
+  const hoseJet=!!(hasHoseNozzle&&hoseValveOpen); // holding the lăng is not enough — no water until choice 2 opens the valve
+  // The lăng tip sits at the bottom-right of the view, like the held model
+  const tipX=camera.position.x+rx*0.34+fx*0.55, tipY=camera.position.y-0.28, tipZ=camera.position.z+rz*0.34+fz*0.55;
   if(active){
     startHiss();
     for(let i=0;i<sprayCount;i++){
       const p=sprayParts[i];
-      if(p.life<=0&&Math.random()<0.85){
-        p.life=0.35+Math.random()*0.5;
-        const sp=3.8+Math.random()*2.6;
-        p.x=camera.position.x+rx*0.3;p.y=camera.position.y-0.26;p.z=camera.position.z+rz*0.3;
-        p.vx=fx*sp+(Math.random()-0.5)*0.8;p.vy=fy*sp+(Math.random()-0.5)*0.6;p.vz=fz*sp+(Math.random()-0.5)*0.8;
+      if(p.life<=0&&!p.splash&&Math.random()<(hoseJet?0.92:0.85)){
+        if(hoseJet){
+          // water leaves the lăng like a volley of projectiles: a tight,
+          // fast, coherent stream of droplets on a shallow arc — they stay
+          // packed together in flight and only break up near the far end
+          const spread=0.026+Math.random()*0.055;
+          const spd=24+Math.random()*7;
+          p.splash=0;p.life=1.05+Math.random()*0.5;
+          p.x=tipX;p.y=tipY;p.z=tipZ;
+          p.vx=(fx+(Math.random()-0.5)*spread*2)*spd;
+          p.vy=(fy+(Math.random()-0.5)*spread*2)*spd;
+          p.vz=(fz+(Math.random()-0.5)*spread*2)*spd;
+        } else {
+          p.splash=0;p.life=0.35+Math.random()*0.5;
+          const sp=3.8+Math.random()*2.6;
+          p.x=camera.position.x+rx*0.3;p.y=camera.position.y-0.26;p.z=camera.position.z+rz*0.3;
+          p.vx=fx*sp+(Math.random()-0.5)*0.8;p.vy=fy*sp+(Math.random()-0.5)*0.6;p.vz=fz*sp+(Math.random()-0.5)*0.8;
+        }
       }
     }
   } else stopHiss();
   for(let i=0;i<sprayCount;i++){
     const p=sprayParts[i];
-    if(p.life>0){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=1.4*dt;pos[i*3]=p.x;pos[i*3+1]=Math.max(0.04,p.y);pos[i*3+2]=p.z;}
-    else{pos[i*3]=999;pos[i*3+1]=999;pos[i*3+2]=999;}
+    if(p.splash>0){
+      // burst phase: a short rising splash where the droplet landed
+      p.splash-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=6*dt;
+      if(p.splash<=0){p.life=0;p.x=p.y=p.z=999;pos[i*3]=pos[i*3+1]=pos[i*3+2]=999;continue;}
+      pos[i*3]=p.x;pos[i*3+1]=Math.max(0.03,p.y);pos[i*3+2]=p.z;continue;
+    }
+    if(p.life>0){
+      const wasLife=p.life;
+      p.life-=dt;
+      if(hoseJet&&wasLife<0.85){ // far end only: the stream breaks up and fans out into a spray plume
+        p.vx+=(Math.random()-0.5)*8*dt;p.vy+=(Math.random()-0.5)*5*dt;p.vz+=(Math.random()-0.5)*8*dt;
+        p.vx*=1-0.7*dt;p.vz*=1-0.7*dt;
+      }
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=(hoseJet?5.5:1.4)*dt;
+      if(hoseJet&&p.y<=0.03&&p.life>0.2){ // hit the floor -> splash outward and upward
+        p.splash=0.25+Math.random()*0.25;p.y=0.04;
+        p.vx=(Math.random()-0.5)*3.2;p.vy=1.2+Math.random()*2.0;p.vz=(Math.random()-0.5)*3.2;
+      }
+      else if(hoseJet&&p.life>0.12&&(waterHitsSolid(p.x,p.y,p.z)||waterHitsSolid(p.x-p.vx*dt*0.5,p.y-p.vy*dt*0.5,p.z-p.vz*dt*0.5)||waterHitsFire(p.x,p.y,p.z))){
+        // smacked into a wall, a desk or the flames themselves: the droplet
+        // bursts apart and water sprays back out off the surface
+        p.splash=0.32+Math.random()*0.3;
+        p.vx=(Math.random()-0.5)*4.6;p.vz=(Math.random()-0.5)*4.6;
+        p.vy=p.y>3?-(0.5+Math.random()*1.5):1.4+Math.random()*3.0;
+      }
+      pos[i*3]=p.x;pos[i*3+1]=Math.max(0.03,p.y);pos[i*3+2]=p.z;
+    }
+    else{pos[i*3]=pos[i*3+1]=pos[i*3+2]=999;}
   }
   sprayGeo.attributes.position.needsUpdate=true;
+  // Flared spray cones: only while the hose is actually discharging.
+  // Geometry is already narrow-at-tip / wide-at-target, aligned along the
+  // aim direction; a gentle radius pulse keeps it reading as moving water.
+  const showJet=active&&hoseJet;
+  const upVec=new THREE.Vector3(0,1,0), dirVec=new THREE.Vector3(fx,fy,fz);
+  const pulse=1+Math.sin(performance.now()*0.045)*0.06;
+  if(showJet) jetFlowTex.offset.y-=dt*2.6; // streaks race down the stream: water in motion
+  // The stream ENDS where it strikes: each cone is cut to the first surface
+  // along the aim (wall / desk / flames), so the water visibly piles into
+  // the target and bursts there instead of ghosting through it.
+  const reach=showJet?jetReach(tipX,tipY,tipZ,fx,fy,fz):0;
+  for(let i=0;i<jetMeshes.length;i++){
+    const jm=jetMeshes[i];
+    const fullLen=jm.userData.len||6;
+    const len=Math.max(0.55,Math.min(fullLen,reach));
+    jm.visible=showJet&&reach>0.7;
+    if(jm.visible){
+      jm.scale.set(pulse,len/fullLen,pulse);
+      jm.position.set(tipX+fx*len*0.5, tipY+fy*len*0.5, tipZ+fz*len*0.5);
+      jm.quaternion.setFromUnitVectors(upVec,dirVec);
+    }
+  }
 }
 
 // Objects: Extinguishers, breaker, bucket, poster
@@ -729,7 +868,21 @@ hydrantPipe.position.set(4.55,1.05,11.78);hallwayGroup.add(hydrantPipe);
 const hydrantOutlet=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.22,14),new THREE.MeshStandardMaterial({color:0xf59e0b,metalness:0.7,roughness:0.3}));
 hydrantOutlet.rotation.x=Math.PI/2;hydrantOutlet.position.set(4.55,1.42,11.66);hallwayGroup.add(hydrantOutlet);
 const valveWheel=new THREE.Mesh(new THREE.TorusGeometry(0.17,0.035,8,20),new THREE.MeshStandardMaterial({color:0xdc2626,metalness:0.4,roughness:0.4}));
-valveWheel.position.set(5.35,1.55,11.78);hallwayGroup.add(valveWheel);
+valveWheel.position.set(5.5,1.55,11.68);hallwayGroup.add(valveWheel);
+(function(){
+  const red=new THREE.MeshStandardMaterial({color:0xb91c1c,metalness:0.45,roughness:0.35});
+  const brass=new THREE.MeshStandardMaterial({color:0xb45309,metalness:0.7,roughness:0.3});
+  [-0.55,0,0.55].forEach(function(a){
+    const spoke=new THREE.Mesh(new THREE.BoxGeometry(0.31,0.035,0.045),red);
+    spoke.rotation.z=a;spoke.castShadow=true;valveWheel.add(spoke);
+  });
+  const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.08,14),brass);
+  hub.rotation.x=Math.PI/2;valveWheel.add(hub);
+  const wallPipe=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.34,12),brass);
+  wallPipe.rotation.x=Math.PI/2;wallPipe.position.set(5.5,1.55,11.84);wallPipe.castShadow=true;hallwayGroup.add(wallPipe);
+  const riser=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.95,12),brass);
+  riser.position.set(5.5,1.08,11.9);riser.castShadow=true;hallwayGroup.add(riser);
+})();
 // The LĂNG (multi-purpose nozzle) hangs inside the cabinet, coupled to the hose
 // coil — visible the moment the door opens. lang-da-nang.glb replaces this
 // primitive when it loads; picking the nozzle up (valve opened) hides it here.
@@ -744,13 +897,12 @@ const cabinetNozzle=new THREE.Group();cabinetNozzle.position.set(4.02,1.08,11.72
 const hallSign=hallBox(2.4,0.5,0.06,0x991b1b,4,2.45,11.82);
 interactables.push({x:1.9,z:11.3,id:'fire_cabinet',title:'Tủ chữa cháy',desc:'firecabinet'});
 interactables.push({x:4.0,z:11.0,id:'hose_cabinet',title:'Tủ họng nước vách tường — mở tủ',desc:'cabinet'});
-interactables.push({x:4.55,z:11.1,id:'hose_connect',title:'Họng nước chờ — kết nối vòi',desc:'connect'});
-interactables.push({x:5.35,z:11.1,id:'hose_valve',title:'Van nước — mở van',desc:'valve'});
+interactables.push({group:cabinetNozzle,x:4.02,z:11.1,id:'hose_nozzle',title:'1 — Lấy lăng vòi',desc:'nozzle'});
+interactables.push({x:5.5,z:11.1,id:'hose_valve',title:'2 — Mở van nước',desc:'valve'});
 interactables.push({x:6.5,z:7.8,id:'hall_door',title:'Cửa văn phòng — E mở/đóng cửa',desc:'halldoor'});
-// Hose lines: hallway segment (cabinet -> exit door) and office segment (exit door -> fire), shown after connecting
-function makeHoseLine(points,color){const g=new THREE.BufferGeometry().setFromPoints(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const l=new THREE.Line(g,new THREE.LineBasicMaterial({color}));l.visible=false;scene.add(l);return l;}
-const hoseLineHall=makeHoseLine([[4.55,0.35,11.5],[5,0.06,10.2],[6.2,0.06,8.6],[6.5,0.06,7.4]],0xd97706);
-const hoseLineOffice=makeHoseLine([[6.5,0.06,6.6],[6,0.06,4],[2,0.06,1],[-2,0.06,-2],[-6.2,0.06,-4.4]],0xd97706);
+// No hose tube on the floor: the run from the hallway hydrant to the office
+// is implicit — once the valve opens, the nozzle in hand is charged and the
+// player carries the loose hose stub behind the lăng (see heldHoseStub).
 hallwayGroup.visible=true;
 // Wall colliders so the player walks around walls and through the door gap only
 addCollider(-2.05,7,15.9,0.35); // office south wall, left of the door
@@ -776,18 +928,28 @@ beacon.rotation.x=-Math.PI/2;beacon.position.set(1.2,0.03,4.3);beacon.visible=fa
 
 // ===== Held (first-person) models: what you see in your hand =====
 scene.add(camera);
+// Thick canvas-hose stub trailing out of the back of the hand-held nozzle, so
+// carrying the lăng reads as carrying lăng + vòi, not a bare nozzle.
+function heldHoseStub(z0){
+  z0=z0||0.1; // coupling point at the nozzle's rear (the .glb nozzle is longer)
+  const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,z0),new THREE.Vector3(0,-0.05,z0+0.18),new THREE.Vector3(0.03,-0.22,z0+0.32),new THREE.Vector3(0.07,-0.48,z0+0.4)]);
+  const m=new THREE.Mesh(new THREE.TubeGeometry(curve,16,0.048,10,false),new THREE.MeshStandardMaterial({color:0xd97706,roughness:0.7,metalness:0.05}));
+  m.castShadow=true;return m;
+}
 function heldExtModel(type){
   const g=new THREE.Group();
-  const isCO2=type==='CO2',isNozzle=type==='NOZZLE',isPractice=type==='PRACTICE';
-  const bodyMat=new THREE.MeshStandardMaterial({color:isNozzle?0x1d4ed8:isPractice?0x0f766e:0xdc2626,metalness:0.35,roughness:0.35});
+  const isCO2=type==='CO2',isNozzle=type==='NOZZLE',isPractice=type==='PRACTICE',isWater=type==='WATER';
+  const bodyMat=new THREE.MeshStandardMaterial({color:isNozzle?0x1d4ed8:isPractice?0x0f766e:isWater?0xc0c6ce:0xdc2626,metalness:isWater?0.55:0.35,roughness:isWater?0.28:0.35});
   const darkMat=new THREE.MeshStandardMaterial({color:0x111827,roughness:0.5});
   if(isNozzle){
     const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.045,0.3,12),bodyMat);tube.rotation.x=Math.PI/2;g.add(tube);
     const tip=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.028,0.12,12),darkMat);tip.position.z=-0.2;tip.rotation.x=Math.PI/2;g.add(tip);
+    g.add(heldHoseStub());
   } else {
     const b=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.08,0.3,16),bodyMat);g.add(b);
     const h=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.02,0.035),darkMat);h.position.y=0.18;g.add(h);
     const lbl=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.11,0.01),new THREE.MeshStandardMaterial({color:0xffffff}));lbl.position.set(0,-0.02,0.078);g.add(lbl);
+    const band=new THREE.Mesh(new THREE.BoxGeometry(0.105,0.032,0.012),new THREE.MeshStandardMaterial({color:isCO2?0x111827:type==='POWDER'?0xf59e0b:isWater?0x2563eb:0xffffff,roughness:0.45}));band.position.set(0,0.025,0.079);g.add(band);
     if(isCO2){const horn=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.06,0.16,12),darkMat);horn.position.set(0.05,0.16,-0.12);horn.rotation.x=Math.PI/2.3;g.add(horn);}
     else{const noz=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.025,0.12,8),darkMat);noz.position.set(0.05,0.14,-0.1);noz.rotation.x=Math.PI/2.2;g.add(noz);
       if(!isPractice){const dial=new THREE.Mesh(new THREE.CylinderGeometry(0.026,0.026,0.012,12),new THREE.MeshStandardMaterial({color:0xffffff}));dial.position.set(0.07,0.15,0.03);dial.rotation.x=Math.PI/2.4;g.add(dial);}}
@@ -795,7 +957,7 @@ function heldExtModel(type){
   g.position.set(0.34,-0.32,-0.55);g.rotation.set(0.15,-0.2,0.1);g.visible=false;
   camera.add(g);return g;
 }
-const heldCO2=heldExtModel('CO2'),heldPowder=heldExtModel('POWDER'),heldNozzle=heldExtModel('NOZZLE'),heldPractice=heldExtModel('PRACTICE');
+const heldCO2=heldExtModel('CO2'),heldPowder=heldExtModel('POWDER'),heldWater=heldExtModel('WATER'),heldNozzle=heldExtModel('NOZZLE'),heldPractice=heldExtModel('PRACTICE');
 
 // ============ GLB MODEL UPGRADE ============
 // Real .glb furniture (assets/models/) swapped in as each file loads. The
@@ -865,7 +1027,9 @@ function swapGLBDoor(root){ // cua-thoat-hiem.glb -> exit door (frame stays fixe
 function swapGLBNozzle(root){ // lang-da-nang.glb -> first-person hose nozzle in hand
   heldNozzle.children.forEach(function(c){c.visible=false;});
   const c=prepClone(root,0,0,0,Math.PI); // model tip points +Z; turn it to camera-forward (-Z)
+  glbFitHeight(c,0.42); // same real-world size as the nozzle hanging in the cabinet
   heldNozzle.add(glbWrap(c,false));
+  heldNozzle.add(heldHoseStub(0.3)); // the .glb is the bare nozzle; keep the hose stub behind it
 }
 function swapGLBFlame(root){ // ngon-lua-moi.glb -> the printer fire (the primitive cones stay as the fallback)
   const c=root.clone(true);glbShadows(c);
@@ -1039,11 +1203,14 @@ function addNameLabel(text,x,y,z,parent){
   const sp=makeNameLabel(text);sp.position.set(x,y,z);(parent||scene).add(sp);return sp;
 }
 // 3D anchors + aim heights for the outline box / crosshair test
-const OBJ3D_MAP={breaker:breakerPanel,poster:poster,phone:phoneMesh,map:mapMesh,bucket:bucket,exit:doorPivot,hall_door:doorPivot,hose_cabinet:hoseCabinetBody,hose_connect:hydrantOutlet,hose_valve:valveWheel};
-const AIM_Y={poster:1.7,breaker:1.5,exit:1.2,hall_door:1.2,hose_cabinet:1.25,fire_cabinet:1.1,bucket:0.5,phone:0.9,map:0.9,practice_ext:0.6};
+const OBJ3D_MAP={breaker:breakerPanel,poster:poster,phone:phoneMesh,map:mapMesh,bucket:bucket,exit:doorPivot,hall_door:doorPivot,hose_cabinet:hoseCabinetBody,hose_nozzle:cabinetNozzle,hose_valve:valveWheel};
+const AIM_Y={poster:1.7,breaker:1.5,exit:1.2,hall_door:1.2,hose_cabinet:1.25,hose_nozzle:1.08,hose_valve:1.55,fire_cabinet:1.1,bucket:0.5,phone:0.9,map:0.9,practice_ext:0.6};
 interactables.forEach(o=>{o.obj3d=o.group||OBJ3D_MAP[o.id]||null;o.aimY=AIM_Y[o.id]||0.95;});
 // Floating name tags above every interactable
 const cabinetInnerLabels=[];
+let nozzleCabLabel=null; // the big "1 · LẤY LĂNG VÒI" tag — hidden once the nozzle is taken
+let choiceValveLabel=null; // the big "2 · MỞ VAN NƯỚC" tag beside the external wall valve
+let cabinetOuterLabel=null; // "Tủ họng nước" tag — only shown while the closed cabinet is under the crosshair
 (function(){
   const byId={};interactables.forEach(o=>{byId[o.id]=o;});
   if(byId.ext_CO2) addNameLabel('Bình CO₂',0,1.34,0,byId.ext_CO2.group);
@@ -1055,10 +1222,14 @@ const cabinetInnerLabels=[];
   addNameLabel('Điện thoại — gọi 114',0.85,1.24,5.0);
   addNameLabel('Bản đồ thoát hiểm',-0.55,1.18,5.05);
   addNameLabel('Cửa thoát hiểm',6.5,2.74,6.86);
-  addNameLabel('Tủ họng nước',4.0,2.42,11.62);
+  cabinetOuterLabel=addNameLabel('Tủ họng nước',4.0,2.42,11.62);
   cabinetInnerLabels.push(addNameLabel('Họng nước chờ',4.55,2.02,11.6));
-  cabinetInnerLabels.push(addNameLabel('Van nước',5.35,2.12,11.68));
-  cabinetInnerLabels.push(addNameLabel('Lăng phun nước',4.02,1.62,11.66));
+  nozzleCabLabel=addNameLabel('1 · LẤY LĂNG VÒI',4.02,1.72,11.62);
+  nozzleCabLabel.scale.set(nozzleCabLabel.scale.x*1.55,0.4,1);
+  cabinetInnerLabels.push(nozzleCabLabel);
+  choiceValveLabel=addNameLabel('2 · MỞ VAN NƯỚC',5.5,2.08,11.6);
+  choiceValveLabel.scale.set(choiceValveLabel.scale.x*1.55,0.4,1);
+  choiceValveLabel.visible=false;
   if(byId.practice_ext) addNameLabel('Bình chữa cháy TẬP',0,1.22,0,byId.practice_ext.group);
   addNameLabel('Máy in',-7,2.6,-4.9);
   cabinetInnerLabels.forEach(s=>{s.visible=false;}); // parts inside the cabinet show once it opens
@@ -1077,8 +1248,9 @@ function getAimTarget(){
     else{
       if(o.id==='practice_ext') continue;
       if(o.id==='hose_cabinet'&&currentLevel!==1) continue;
-      if(o.id==='hose_connect'&&!(currentLevel===1&&hoseCabinetOpen)) continue;
-      if(o.id==='hose_valve'&&!(currentLevel===1&&hoseConnected)) continue;
+      if(o.id==='hose_cabinet'&&hoseCabinetOpen) continue; // opened cabinet is inert: no outline / tooltip / prompt
+      if(o.id==='hose_nozzle'&&!(currentLevel===1&&hoseCabinetOpen&&!hasHoseNozzle)) continue;
+      if(o.id==='hose_valve'&&!(currentLevel===1&&hoseCabinetOpen&&!hoseValveOpen)) continue;
     }
     const dx=o.x-camera.position.x, dy=(o.aimY||1.0)-camera.position.y, dz=o.z-camera.position.z;
     const d=Math.sqrt(dx*dx+dy*dy+dz*dz);
@@ -1094,6 +1266,27 @@ const objectiveText=document.getElementById('objectiveText');
 const subObjective=document.getElementById('subObjective');
 const toastEl=document.getElementById('toast');
 const promptEl=document.getElementById('prompt');
+const cabinetChoicesEl=document.getElementById('cabinetChoices');
+const choiceNozzleBtn=document.getElementById('choiceNozzle');
+const choiceValveBtn=document.getElementById('choiceValve');
+function cabinetChoicesAvailable(){
+  // Choices stay reachable once the cabinet is open AND the player is still in
+  // the hallway area, so the nozzle pick-up can never be missed behind the HUD.
+  if(currentLevel!==1||!hoseCabinetOpen||hoseValveOpen) return false;
+  if(playerArea==='hallway') return true;
+  return Math.hypot(player.x-4.7,player.z-11.0)<4.2;
+}
+function updateCabinetChoices(){
+  if(!cabinetChoicesEl) return;
+  cabinetChoicesEl.classList.toggle('show',cabinetChoicesAvailable());
+  choiceNozzleBtn.disabled=!!hasHoseNozzle;
+  choiceValveBtn.disabled=false;
+  choiceNozzleBtn.classList.toggle('done',!!hasHoseNozzle);
+  choiceValveBtn.classList.toggle('done',!!hoseValveOpen);
+  if(hasHoseNozzle) choiceValveBtn.classList.add('done');
+}
+choiceNozzleBtn.onclick=()=>handleInteract({id:'hose_nozzle'});
+choiceValveBtn.onclick=()=>handleInteract({id:'hose_valve'});
 function showToast(msg,color='#dc2626',ms=2600){toastEl.textContent=msg;toastEl.style.background=color;toastEl.style.display='block';clearTimeout(showToast.t);showToast.t=setTimeout(()=>toastEl.style.display='none',ms);beep(color==='#dc2626'?220:660,0.15,'square',0.08);}
 function addScore(n){score+=n;document.getElementById('score').textContent=score;}
 // Fire procedure lives in the mission card now — one current task at a time
@@ -1113,7 +1306,7 @@ const TASK_INFO_LV1=[
   ['task-hall','Ra hành lang mở tủ họng nước','mở cửa thoát hiểm, đi qua cửa, mở tủ đỏ cuối hành lang'],
   ['task-connect','Kết nối vòi vào họng nước','lắp đầu nối vòi vào họng'],
   ['task-valve','Mở van nước','xoay van cho nước vào vòi'],
-  ['task-hose','Cầm lăng phun nước dập lửa','về phòng, phun nước cho tới khi lửa về 0%']
+  ['task-hose','Cầm lăng phun nước dập lửa','về phòng, ngắm vào đám cháy và phun nước (đứng xa cũng trúng) cho tới khi lửa về 0%']
 ];
 let taskStates={'task-find':'active','task-quiz':'locked','task-breaker':'locked','task-ext':'locked','task-spray':'locked'};
 function setTask(id,state){taskStates[id]=state;renderTaskStrip();}
@@ -1192,33 +1385,43 @@ function handleInteract(obj){
   if(obj.id==='hall_door'){ toggleExitDoor(); return; }
   if(obj.id==='hose_cabinet'){
     if(currentLevel!==1){showToast('Tủ họng nước chỉ dùng ở Level 1.','#ea580c');return;}
-    if(hoseCabinetOpen){showToast('Tủ đã mở. Bên trong có cuộn vòi và họng chờ.','#0f766e');return;}
+    if(hoseCabinetOpen){return;} // already open: fully inert — no toast, no prompt, no highlight
     hoseCabinetOpen=true;addScore(15); // the door swing itself is animated in the render loop
-    const cabIt=interactables.find(o=>o.id==='hose_cabinet');if(cabIt)cabIt.title='Tủ họng nước (đã mở) — vòi & lăng ở bên trong';
-    showToast('🚪 Đã mở tủ họng nước! Cuộn vòi, lăng phun và họng chờ đều ở bên trong.','#0f766e',3400);beep(620,0.14);
+    showToast('🚪 Đã mở tủ họng nước! Chọn 1 để lấy lăng vòi, sau đó chọn 2 để mở van nước ở ngoài tủ.','#0f766e',3600);beep(620,0.14);
     setTask('task-hall','done');setTask('task-connect','active');
-    updateObjective('Kết nối vòi vào họng nước','Trong tủ: cuộn vòi vàng, lăng phun treo cạnh vòi, họng chờ ống vàng bên phải. Tới họng chờ rồi nhấn E để lắp đầu nối vòi.');
+    updateObjective('Chọn 1: lấy lăng vòi','Nhấn phím 1 hoặc ngắm vào lăng rồi nhấn E. Lăng sẽ rời giá treo trong tủ và hiện trên tay bạn; sau đó chọn 2 để mở van nước trên tường cạnh tủ.');
     return;
   }
-  if(obj.id==='hose_connect'){
+  if(obj.id==='hose_nozzle'){
     if(currentLevel!==1) return;
     if(!hoseCabinetOpen){showToast('Phải mở tủ họng nước trước!','#ea580c');return;}
-    if(hoseConnected){showToast('Vòi đã nối vào họng. Mở van nước đi!','#0f766e');return;}
-    hoseConnected=true;hoseLineHall.visible=true;hoseLineOffice.visible=true;addScore(20);
-    showToast('🔗 Đã kết nối vòi vào họng nước! Vòi đã kéo về phía văn phòng.','#0f766e',3200);beep(700,0.14);
-    setTask('task-connect','done');setTask('task-valve','active');
-    updateObjective('Mở van nước','Tới bánh van đỏ bên phải họng, nhấn E để mở nước vào vòi.');
+    if(hasHoseNozzle){showToast('Lăng đang ở trên tay bạn. Chọn 2 để mở van nước!','#0f766e');return;}
+    hoseConnected=true;hasHoseNozzle=true;cabinetNozzle.visible=false;addScore(20); // the lăng leaves its cabinet hanger and appears in first-person view
+    // Nước được cấp NGAY khi lăng rời giá: người chơi không còn bị kẹt ở bước
+    // "chưa có nước" như trước (đó là lý do bấm xịt mà không thấy giọt nào).
+    // Lựa chọn 2 vẫn hiện trong bảng để xác nhận van đã mở.
+    if(!hoseValveOpen){
+      hoseValveOpen=true;
+      document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>🚿</span><label>Lăng phun nước<br>Đã có nước!</label>';
+      showToast('💧 Nước đã vào vòi! Giữ F / nút XỊT để phun. Có thể bấm 2 để xác nhận van đã mở.','#0f766e',4200);
+    } else {
+      document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>🚿</span><label>Lăng phun nước<br>Đã có nước!</label>';
+      showToast('💧 Đã lấy lăng vòi — nước đã sẵn sàng! Giữ F / nút XỊT để phun dập lửa.','#0f766e',4200);
+    }
+    beep(700,0.14);
+    setTask('task-connect','done');setTask('task-valve','done');setTask('task-hose','active');
+    updateObjective('Cầm lăng về văn phòng dập lửa','Nước đã vào vòi. Qua cửa hành lang về phòng, ngắm vào đám cháy rồi giữ F / nút XỊT phun nước cho tới khi lửa về 0% — vòi phun xa, đứng xa cũng trúng.');
     return;
   }
   if(obj.id==='hose_valve'){
     if(currentLevel!==1) return;
-    if(!hoseConnected){showToast('Chưa nối vòi — kết nối vòi vào họng trước!','#ea580c');return;}
-    if(hoseValveOpen){showToast('Van đã mở, nước đã vào vòi. Cầm lăng về phòng phun!','#0f766e');return;}
-    hoseValveOpen=true;hasHoseNozzle=true;valveWheel.rotation.z=2.4;addScore(20);
+    if(!hasHoseNozzle){showToast('Hãy chọn 1 để lấy lăng vòi trước!','#ea580c');return;}
+    if(hoseValveOpen){showToast('💧 Van đã mở — nước đã vào vòi. Cầm lăng về phòng phun!','#0f766e',3200);return;}
+    hoseConnected=true;hoseValveOpen=true;addScore(20); // the external wall valve now spins open in the render loop
     document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>🚿</span><label>Lăng phun nước<br>Đã có nước!</label>';
     showToast('💧 Đã mở van! Nước vào vòi — bạn đang cầm lăng phun. Về văn phòng dập lửa!','#0f766e',3400);beep(760,0.16);
     setTask('task-valve','done');setTask('task-hose','active');
-    updateObjective('Cầm lăng về văn phòng dập lửa','Qua cửa hành lang về phòng, tới gần máy in, giữ F / nút XỊT để phun nước cho tới khi lửa về 0%.');
+    updateObjective('Cầm lăng về văn phòng dập lửa','Qua cửa hành lang về phòng, ngắm vào đám cháy rồi giữ F / nút XỊT phun nước cho tới khi lửa về 0% — vòi phun xa, đứng xa cũng trúng.');
     return;
   }
   if(obj.id==='exit'){ toggleExitDoor(); return; }
@@ -1257,7 +1460,7 @@ function handleInteract(obj){
       const g=interactables.find(o=>o.id==='ext_POWDER');if(g&&g.group)g.group.visible=false;
     } else {
       dialog('⚠️ Bình nước (bạc)','Bình này phun nước — cực kỳ nguy hiểm với cháy điện. Chỉ dùng cho cháy gỗ/giấy khi đã ngắt điện hoàn toàn.',[
-        {label:'Vẫn lấy bình nước',onClick:()=>{hasExtinguisher='WATER';document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>💧</span><label>Bình nước<br>Nguy hiểm!</label>';document.getElementById('dialogOverlay').classList.add('hidden');showToast('⚠️ Cầm bình nước gần cháy điện rất nguy hiểm!','#dc2626');}},
+        {label:'Vẫn lấy bình nước',onClick:()=>{hasExtinguisher='WATER';document.getElementById('invItem').className='invSlot';document.getElementById('invItem').innerHTML='<span>💧</span><label>Bình nước<br>Đang cầm trên tay</label>';document.getElementById('dialogOverlay').classList.add('hidden');const g=interactables.find(o=>o.id==='ext_WATER');if(g&&g.group)g.group.visible=false;showToast('⚠️ Bình nước đã hiện trên tay bạn — cầm bình này gần cháy điện rất nguy hiểm!','#dc2626');}},
         {label:'Không lấy — tìm CO₂',onClick:()=>{document.getElementById('dialogOverlay').classList.add('hidden');addScore(10);}}
       ]);
     }
@@ -1344,7 +1547,13 @@ function endLookTouch(e){
 canvas.addEventListener('touchend',endLookTouch);
 canvas.addEventListener('touchcancel',endLookTouch);
 
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE') tryInteract();if(e.code==='KeyF') spraying=true;});
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='KeyE') tryInteract();
+  if(e.code==='KeyF') spraying=true;
+  if((e.code==='Digit1'||e.code==='Numpad1')&&cabinetChoicesAvailable()) handleInteract({id:'hose_nozzle'});
+  if((e.code==='Digit2'||e.code==='Numpad2')&&cabinetChoicesAvailable()) handleInteract({id:'hose_valve'});
+});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyF') spraying=false;});
 
 // Joystick
@@ -1380,8 +1589,10 @@ function getNearest(){
     if(tutorial&&o.id!=='practice_ext') continue; // Level 0: only the practice item is active
     // Cabinet internals only become targets once they are actually reachable —
     // before that they shadowed the cabinet itself and made it impossible to open
-    if(o.id==='hose_connect'&&!hoseCabinetOpen) continue;
-    if(o.id==='hose_valve'&&!hoseConnected) continue;
+    if(o.id==='hose_cabinet'&&hoseCabinetOpen) continue; // opened cabinet is inert — focus on the nozzle / outlet inside
+    if(o.id==='hose_cabinet'&&!(aimTarget&&aimTarget.id==='hose_cabinet')) continue; // closed cabinet: prompt/E only while the crosshair is actually on it
+    if(o.id==='hose_nozzle'&&!(hoseCabinetOpen&&!hasHoseNozzle)) continue;
+    if(o.id==='hose_valve'&&!(hoseCabinetOpen&&!hoseValveOpen)) continue;
     const d=Math.hypot(player.x-o.x,player.z-o.z);
     if(d<bestDist){bestDist=d;best=o;}
   }
@@ -1485,7 +1696,6 @@ function startMainLevel(){
   const exIt=interactables.find(o=>o.id==='exit');if(exIt)exIt.title='Cửa thoát hiểm — E mở cửa';
   hoseCabinetDoorPivot.rotation.y=0;valveWheel.rotation.z=0;
   const cabReset=interactables.find(o=>o.id==='hose_cabinet');if(cabReset)cabReset.title='Tủ họng nước vách tường — mở tủ';
-  hoseLineHall.visible=false;hoseLineOffice.visible=false;
   fireHealth=100;breakerOff=false;seenFire=false;quizDone=false;fireDialogShown=false;
   if(currentLevel===1){TASK_INFO=TASK_INFO_LV1;taskStates={};TASK_INFO.forEach(t=>taskStates[t[0]]='locked');}
   else{TASK_INFO=[
@@ -1551,27 +1761,45 @@ function animate(){
     // LV0: walking out through the open exit door = escaped to safety
     if(currentLevel===0&&exitDoorOpen&&player.z>7.9&&!gameOver){escapeGame();}
     checkFireProximity();
+    // Water-jet hit test: generous, so the fire can be hosed down from well
+    // back — the jet counts as striking when the aim ray passes within ~2.4m
+    // of the flame centre, out to ~30m. No pixel-perfect aim at the core.
+    let jetHitsFire=false;
+    if(hasHoseNozzle&&hoseValveOpen&&fireHealth>0){
+      const jcp=Math.cos(pitch);
+      const jfx=-Math.sin(yaw)*jcp, jfy=Math.sin(pitch), jfz=-Math.cos(yaw)*jcp;
+      const tx=-7-camera.position.x, ty=1.35-camera.position.y, tz=-4.9-camera.position.z;
+      const along=tx*jfx+ty*jfy+tz*jfz;
+      if(along>0&&along<30){
+        const qx=tx-jfx*along, qy=ty-jfy*along, qz=tz-jfz*along;
+        jetHitsFire=(qx*qx+qy*qy+qz*qz)<5.8; // ~2.4m off-axis still soaks the flames
+      }
+    }
     // interact prompt
     interactTarget=aimTarget||getNearest();
     if(interactTarget){promptEl.style.display='block';promptEl.innerHTML=`<kbd>E</kbd> ${interactTarget.title} — nhấn E / nút đỏ`; }
-    else if(Math.hypot(player.x+7,player.z+4.9)<2.8&&(hasExtinguisher||hasHoseNozzle)){promptEl.style.display='block';promptEl.innerHTML=!breakerOff?'⚠️ Chưa ngắt điện! Xịt bây giờ sẽ nguy hiểm':hasHoseNozzle?'🚿 Giữ <kbd>F</kbd> hoặc nút XỊT để phun nước dập lửa!':((hasExtinguisher==='CO2'||hasExtinguisher==='POWDER')?'🔥 Giữ <kbd>F</kbd> hoặc nút XỊT để dập lửa!':'⚠️ Bình này không phù hợp!');}
+    else if((Math.hypot(player.x+7,player.z+4.9)<2.8||(hasHoseNozzle&&jetHitsFire))&&(hasExtinguisher||hasHoseNozzle)){promptEl.style.display='block';promptEl.innerHTML=!breakerOff?'⚠️ Chưa ngắt điện! Xịt bây giờ sẽ nguy hiểm':hasHoseNozzle&&!hoseValveOpen?'🚿 Đã cầm lăng nhưng chưa có nước — chọn 2 để mở van nước!':hasHoseNozzle?'🚿 Giữ <kbd>F</kbd> hoặc nút XỊT để phun nước dập lửa!':((hasExtinguisher==='CO2'||hasExtinguisher==='POWDER')?'🔥 Giữ <kbd>F</kbd> hoặc nút XỊT để dập lửa!':'⚠️ Bình này không phù hợp!');}
     else promptEl.style.display='none';
     // spraying logic — in LV1 an extinguisher only ever gets the fire from
     // 100% down to 90%, then it STICKS at 90%; only the hallway hose finishes it
     const nearFire=Math.hypot(player.x+7,player.z+4.9)<3.2;
-    const wantsSpray=(spraying||sprayingMobile)&&(hasExtinguisher||hasHoseNozzle);
+    const wantsSpray=(spraying||sprayingMobile)&&(hasHoseNozzle?hoseValveOpen:!!hasExtinguisher);
     sprayActive=false;
     if(wantsSpray){
-      sprayPoints.material.color.set(hasHoseNozzle?0x38bdf8:hasExtinguisher==='WATER'?0x7dd3fc:hasExtinguisher==='POWDER'?0xe7e5e4:0xffffff);
-      sprayPoints.material.size=hasHoseNozzle?0.3:hasExtinguisher==='POWDER'?0.34:0.22;
+      sprayPoints.material.color.set(hasHoseNozzle?0x2b7de9:hasExtinguisher==='WATER'?0x7dd3fc:hasExtinguisher==='POWDER'?0xe7e5e4:0xffffff);
+      sprayPoints.material.size=hasHoseNozzle?0.34:hasExtinguisher==='POWDER'?0.34:0.22;
       if(!breakerOff){toastThrottled('⚡ CHƯA NGẮT ĐIỆN! Dừng lại, ngắt cầu dao trước!');}
       else{
         sprayActive=true;
-        if(nearFire){
-          if(hasHoseNozzle){
-            fireHealth-=13*dt;score+=4*dt;regrowGrace=3; // water hose: the only thing that takes it to 0%
-          }
-          else if(hasExtinguisher==='WATER'){fireHealth=Math.min(125,fireHealth+54*dt);toastThrottled('💧 Nước làm lửa bùng to hơn! Thả tay ra!');}
+        if(hasHoseNozzle){
+          // The hose works at range: wherever the visible jet strikes the
+          // flames (jetHitsFire, generous cone above) the fire dies down.
+          // Tốc độ xịt tăng rõ rệt (25%/giây) để người chơi cảm nhận tiến
+          // trình ngay khi giữ xịt, không còn kẹt ở 90–100%.
+          if(jetHitsFire){fireHealth-=25*dt;score+=4*dt;regrowGrace=3;updateFireUI();} // water hose: the only thing that takes it to 0%
+        }
+        else if(nearFire){
+          if(hasExtinguisher==='WATER'){fireHealth=Math.min(125,fireHealth+54*dt);toastThrottled('💧 Nước làm lửa bùng to hơn! Thả tay ra!');}
           else if(hasExtinguisher==='CO2'||hasExtinguisher==='POWDER'){
             const rate=hasExtinguisher==='CO2'?22:18;regrowGrace=3;
             if(currentLevel===1){
@@ -1591,11 +1819,11 @@ function animate(){
     // Fire keeps DEVELOPING in LV1: once an extinguisher has knocked it down,
     // if water is not used promptly it grows back on its own all the way to 100%
     if(currentLevel===1&&fireHealth>0&&fireHealth<100){
-      const watering=sprayActive&&hasHoseNozzle&&nearFire;
+      const watering=sprayActive&&hasHoseNozzle&&jetHitsFire;
       if(!watering){
         if(regrowGrace>0) regrowGrace-=dt;
         else{
-          fireHealth=Math.min(100,fireHealth+0.7*dt);updateFireUI();
+          fireHealth=Math.min(100,fireHealth+0.3*dt);updateFireUI(); // bùng lại chậm hơn (0.3%/giây) để người chơi kịp quay lại xịt
           toastThrottled('🔥 Đám cháy đang tự phát triển bùng lại về 100%! Phun nước ngay mới dập hẳn được!','#ea580c');
         }
       }
@@ -1657,7 +1885,13 @@ function animate(){
     tooltipEl.textContent='🎯 '+aimTarget.title;tooltipEl.style.display='block';
   } else { hlHelper.visible=false;tooltipEl.style.display='none'; }
   cabinetInnerLabels.forEach(function(s){s.visible=hoseCabinetOpen;});
+  if(cabinetOuterLabel) cabinetOuterLabel.visible=!hoseCabinetOpen&&!!aimTarget&&aimTarget.id==='hose_cabinet';
+  if(choiceValveLabel) choiceValveLabel.visible=hoseCabinetOpen&&!hoseValveOpen;
   cabinetNozzle.visible=!hasHoseNozzle; // the nozzle leaves the cabinet once it is in your hand
+  if(nozzleCabLabel) nozzleCabLabel.visible=hoseCabinetOpen&&!hasHoseNozzle; // …and so does its name tag
+  updateCabinetChoices();
+  document.body.classList.toggle('has-interact-target',!!(gameStarted&&!gameOver&&interactTarget));
+  valveWheel.rotation.z+=((hoseValveOpen?2.4:0)-valveWheel.rotation.z)*Math.min(1,dt*5); // choice 2 visibly spins the external valve open
   // Hose-cabinet door swings smoothly once toggled (was an instant snap before)
   hoseCabinetDoorPivot.rotation.y+=((hoseCabinetOpen?-1.85:0)-hoseCabinetDoorPivot.rotation.y)*Math.min(1,dt*6);
   // fire animation
@@ -1672,6 +1906,7 @@ function animate(){
   doorPivot.rotation.y+=((exitDoorOpen?-1.85:0)-doorPivot.rotation.y)*Math.min(1,dt*6);
   heldCO2.visible=!tutorial&&hasExtinguisher==='CO2'&&!hasHoseNozzle;
   heldPowder.visible=!tutorial&&hasExtinguisher==='POWDER'&&!hasHoseNozzle;
+  heldWater.visible=!tutorial&&hasExtinguisher==='WATER'&&!hasHoseNozzle;
   heldNozzle.visible=!tutorial&&!!hasHoseNozzle;
   heldPractice.visible=tutorial&&tutHasExt;
   scene.fog.color.setHSL(0,0,0.16-smokeLevel*0.0005);
